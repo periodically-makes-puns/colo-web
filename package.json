@@ -1,0 +1,23 @@
+{
+  "name": "colossus",
+  "version": "0.0.1",
+  "description": "A mystery :)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "btoa": "^1.2.1",
+    "cookie-parser": "^1.4.3",
+    "discord.js": "^11.3.2",
+    "express": "^4.16.3",
+    "node-fetch": "^2.1.2",
+    "sqlite": "^2.9.2",
+    "morgan": "^1.9.0",
+    "ejs": "^2.6.1",
+    "hex64": "^0.4.0"
+  },
+  "engines": {
+    "node": "9.x"
+  },
+  "license": "MIT"
+}
