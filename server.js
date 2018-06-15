@@ -1,24 +1,34 @@
 /*jshint esversion: 6*/
+
+// file display requires
 const ejs = require("ejs");
-const express = require('express');
 const path = require('path');
-const Discord = require("discord.js");
-const cookieParser = require("cookie-parser");
-const bodyParser = require("body-parser");
-const client = new Discord.Client();
+
+// express requires
+const express = require('express');
 const app = express();
 const morgan = require('morgan');
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
 
-client.on("ready", () => {
+const btoa = require("btoa");
+
+// discord requires
+const Discord = require("discord.js");
+const client = new Discord.Client();
+
+client.on("ready", () => { // when bot is ready to go
   console.log("Ready to go!");
 });
 
-client.on("message", (msg) => {
-  if (msg.author.bot) {return;}
-  msg.channel.send(msg.content);
+client.on("message", (msg) => { // on every message that gets sent
+  // run this stuff
+  if (msg.author.bot) {return;} // breaks if sender is bot
+  msg.channel.send(msg.content); // echoes content
 });
 
-client.login(process.env.TOKEN);
+client.login(process.env.TOKEN); // login with token
+// token not shown
 
 app.use(bodyParser.json());
 app.use(cookieParser());

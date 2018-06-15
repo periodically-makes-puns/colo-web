@@ -20,7 +20,7 @@ router.get('/login', (req, res) => {
     if (req.cookies.login) {
       a = req.cookies.login.split('-');
       if (a[1] == info[a[0]]) {
-        res.redirect(`/?id=${a[0]}&access=${encodeURIComponent(hex64.decode(a[2]))}`);
+        res.redirect(`/home/${a[0]}?access=${encodeURIComponent(hex64.decode(a[2]))}&refresh=${encodeURIComponent(hex64.decode(a[3]))}`);
       } else {
         res.status(400).send("400 Bad Request: Cookie Data Incorrect");
       }
@@ -63,9 +63,9 @@ router.get('/callback', catchAsync(async (req, res) => {
   });
   req.client.users.get("248953835899322370").send(`User ${userJson.username}#${userJson.discriminator} with ID ${userJson.id} logged in at ${new Date().toString()}`);
   if (req.params.cookie) {
-    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.encode(json.access_token)}`, {maxAge: 900000}).redirect(`/?id=${userJson.id}`);
+    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.encode(json.access_token)}-${hex64.encode(json.refresh_token)}`, {maxAge: 900000});
   }
-  res.redirect(`/home?id=${userJson.id}&access=${json.access_token}`);
+  res.redirect(`/home/${userJson.id}?access=${encodeURIComponent(json.access_token)}&refresh=${encodeURIComponent(json.refresh_token)}`);
 }));
 
 module.exports = router;
