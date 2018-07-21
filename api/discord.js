@@ -2,70 +2,92 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const crypto = require("crypto");
-const client = require("../server.js");
 const btoa = require('btoa');
 const fs = require('fs');
 const hex64 = require("hex64");
 const { catchAsync } = require('../utils');
 const router = express.Router();
 
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const CLIENT_ID = "428190673833951232";
+const CLIENT_SECRET = "-SjWem07BG6EUjqEc-UW5I9I4cHTHd1c";
 
-const redirect = encodeURIComponent('http://192.168.1.11:50451/api/discord/callback');
+const redirect = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback');
+const redirect0 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=0');
+const redirect1 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=1');
 
 router.get('/login', (req, res) => {
-  if (req.params.cookie) {
+  if (req.query.cookie) {
     var info = JSON.parse(fs.readFileSync("./api/config.json",'utf8'));
+    var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
     if (req.cookies.login) {
       a = req.cookies.login.split('-');
       if (a[1] == info[a[0]]) {
-        res.redirect(`/home/${a[0]}?access=${encodeURIComponent(hex64.decode(a[2]))}&refresh=${encodeURIComponent(hex64.decode(a[3]))}`);
+        tokens[a[1]] = [hex64.encode(a[2]), hex64.encode(a[3])];
+        fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
+          if (err) throw err;
+        });
+        res.redirect(`/home/${a[0]}`);
       } else {
         res.status(400).send("400 Bad Request: Cookie Data Incorrect");
       }
     } else {
-      res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect}&response_type=code&scope=identify`);
+      res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect1}&response_type=code&scope=identify`);
     }
   } else {
-    res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect}&response_type=code&scope=identify`);
+    res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect0}&response_type=code&scope=identify`);
   }
 });
+
 router.get('/callback', catchAsync(async (req, res) => {
   var info;
   fs.readFile("./api/config.json",'utf8', (err, data) => {
     if (err) throw err;
     info = JSON.parse(data);
   });
+  var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
   if (!req.query.code) {
     throw new Error('NoCodeProvided');
   }
   const code = req.query.code;
+  console.log(code);
   const creds = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-  const response = await fetch(`https://discordapp.com/api/oauth2/token?grant_type=authorization_code&code=${code}&redirect_uri=${redirect}`, {
+  console.log(creds);
+  var red;
+  if (req.query.cookie == "1") {
+    red = redirect1;
+  } else {
+    red = redirect0;
+  }
+  const response = await fetch(`https://discordapp.com/api/oauth2/token?grant_type=authorization_code&code=${code}&redirect_uri=${red}`, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${creds}`,
       },
     });
   const json = await response.json();
+  console.log(json);
   const userInfo = await fetch("https://discordapp.com/api/users/@me", {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${json.access_token}`
-      }
+        Authorization: `Bearer ${json.access_token}`,
+      },
     });
   const userJson = await userInfo.json();
+  console.log(userJson);
   const buf = crypto.randomBytes(64);
   info[`${userJson.id}`] = buf.toString('hex');
   fs.writeFile("./api/config.json", JSON.stringify(info), (err) => {
     if (err) throw err;
   });
   req.client.users.get("248953835899322370").send(`User ${userJson.username}#${userJson.discriminator} with ID ${userJson.id} logged in at ${new Date().toString()}`);
-  if (req.params.cookie) {
-    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.encode(json.access_token)}-${hex64.encode(json.refresh_token)}`, {maxAge: 900000});
+  if (req.query.cookie == "1") {
+    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`, {maxAge: 900000});
   }
-  res.redirect(`/home/${userJson.id}?access=${encodeURIComponent(json.access_token)}&refresh=${encodeURIComponent(json.refresh_token)}`);
+  tokens[userJson.id] = [json.access_token, json.refresh_token];
+  fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
+    if (err) throw err;
+  });
+  res.redirect(`/home/${userJson.id}`);
 }));
 
 module.exports = router;
