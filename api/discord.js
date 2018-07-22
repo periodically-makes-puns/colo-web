@@ -8,8 +8,8 @@ const hex64 = require("hex64");
 const { catchAsync } = require('../utils');
 const router = express.Router();
 
-const CLIENT_ID = "428190673833951232";
-const CLIENT_SECRET = "-SjWem07BG6EUjqEc-UW5I9I4cHTHd1c";
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
 const redirect = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback');
 const redirect0 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=0');

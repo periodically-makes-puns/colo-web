@@ -24,9 +24,7 @@ const restart = require('proc-restart');
 // discord requires
 const Discord = require("discord.js");
 const client = new Discord.Client();
-var startTime;
 client.on("ready", () => { // when bot is ready to go
-  startTime = Date.now();
   console.log("Ready to go!");
 });
 
@@ -34,35 +32,10 @@ client.on("message", (msg) => { // on every message that gets sent
   // run this stuff
   if (msg.author.bot) {return;} // breaks if sender is bot
   //msg.channel.send(msg.content); // echoes content
-  console.log(msg.author.username + " - " + msg.content);
-  if (msg.content.startsWith(adminPrefix)) {
-    if (admins.indexOf(msg.author.id) == -1) {
-      msg.channel.send("You can't do that.");
-      return;
-    }
-    console.log(msg.author.username + " ran a command!");
-    let args = msg.content.split(/[\& ]+/g);
-    switch (args[1]) {
-      case "restart":
-        msg.channel.send("Sorry, just gotta go spiff up my code a bit...");
-        setTimeout(() => {
-          restart();
-        }, 1000);
-        break;
-      case "uptime":
-        const curr = Date.now();
-        msg.channel.send(((curr - startTime) / 1000) + " seconds");
-        break;
-      case "kill":
-        msg.channel.send("Goodbye!");
-        setTimeout(() => {
-          throw Error("Goodbye!");
-        }, 1000);
-    }
-  }
+  
 });
 
-client.login("NDI4MTkwNjczODMzOTUxMjMy.DiY2Iw.TYudUVhHSVaVXsgZtxCjmcazVyc"); // login with token
+client.login(process.env.TOKEN); // login with token
 // token not shown
 
 // HERE BE EXPRESS.... STUFF
