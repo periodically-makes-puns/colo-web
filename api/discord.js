@@ -7,9 +7,9 @@ const fs = require('fs');
 const hex64 = require("hex64");
 const { catchAsync } = require('../utils');
 const router = express.Router();
-
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const creds = JSON.parse(fs.readFileSync("./token.json"));
+const CLIENT_ID = creds.id;
+const CLIENT_SECRET = creds.secret;
 
 const redirect = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback');
 const redirect0 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=0');

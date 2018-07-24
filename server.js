@@ -10,15 +10,15 @@ const app = express();
 const morgan = require('morgan');
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-
+const fs = require("fs");
 const btoa = require("btoa");
 const prefix = "^";
-const regPrefix = "m^";
+const mintPrefix = "m^";
 const adminPrefix = "&";
 
 const admins = ["262173579876106240", "248953835899322370"]
 
-const regular = require("./discord/regular");
+const regular = require("./discord/reg-handle");
 const restart = require('proc-restart');
 
 // discord requires
@@ -35,7 +35,9 @@ client.on("message", (msg) => { // on every message that gets sent
   
 });
 
-client.login(process.env.TOKEN); // login with token
+const creds = JSON.parse(fs.readFileSync("./token.json"));
+
+client.login(creds.token); // login with token
 // token not shown
 
 // HERE BE EXPRESS.... STUFF
