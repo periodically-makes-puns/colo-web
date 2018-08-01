@@ -34,8 +34,20 @@ client.on("message", (msg) => { // on every message that gets sent
   if (msg.author.bot) {return;} // breaks if sender is bot
   //msg.channel.send(msg.content); // echoes content
   if (admins.indexOf(msg.author.id) != -1) {
-    if (msg == "&pull") {
+    if (msg.content == "&fetch") {
+      sgit().fetch("origin", "master");
+    } else if (msg.content == "&pull") {
       sgit().pull("origin", "master");
+    } else if (msg.content == "&restart") {
+      msg.channel.send("Gotta go spiff up my code...");
+      setTimeout(() => {
+        restart();
+      }, 500);
+    } else if (msg.content == "&kill") {
+      msg.channel.send("Nighty night.");
+      setTimeout(() => {
+        throw Error("Goodbye!");
+      }, 500);
     }
   }
 });
