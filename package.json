@@ -2,6 +2,10 @@
   "name": "colossus",
   "version": "0.0.1",
   "description": "A mystery :)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/periodically-makes-puns/colo-web/"
+  },
   "scripts": {
     "start": "node server.js"
   },

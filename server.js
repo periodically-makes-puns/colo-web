@@ -15,6 +15,7 @@ const btoa = require("btoa");
 const prefix = "^";
 const mintPrefix = "m^";
 const adminPrefix = "&";
+const sgit = require("simple-git")
 
 const admins = ["262173579876106240", "248953835899322370"]
 
@@ -32,7 +33,11 @@ client.on("message", (msg) => { // on every message that gets sent
   // run this stuff
   if (msg.author.bot) {return;} // breaks if sender is bot
   //msg.channel.send(msg.content); // echoes content
-  
+  if (admins.indexOf(msg.author.id) != -1) {
+    if (msg == "&pull") {
+      sgit().pull("origin", "master");
+    }
+  }
 });
 
 const tcreds = JSON.parse(fs.readFileSync("./token.json"));
