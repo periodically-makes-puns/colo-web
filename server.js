@@ -57,7 +57,7 @@ const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 client.login(tcreds.token); // login with token
 // token not shown
 
-// HERE BE EXPRESS.... STUFF
+// HERE BE EXPRESS.... THINGS
 
 
 // middleware
