@@ -16,7 +16,8 @@
     "ejs": "^2.6.1",
     "hex64": "^0.4.0",
     "eslint": "^5.0.1",
-    "proc-restart": "^0.0.1"
+    "proc-restart": "^0.0.1",
+    "simple-git": "^1.96.0"
   },
   "engines": {
     "node": "9.x"

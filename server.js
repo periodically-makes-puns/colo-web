@@ -35,9 +35,9 @@ client.on("message", (msg) => { // on every message that gets sent
   
 });
 
-const creds = JSON.parse(fs.readFileSync("./token.json"));
+const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 
-client.login(creds.token); // login with token
+client.login(tcreds.token); // login with token
 // token not shown
 
 // HERE BE EXPRESS.... STUFF
@@ -46,7 +46,7 @@ client.login(creds.token); // login with token
 // middleware
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(morgan('dev'));
+app.use(morgan('common'));
 app.engine('html', ejs.renderFile);
 app.set('view engine', 'html');
 

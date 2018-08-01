@@ -7,9 +7,9 @@ const fs = require('fs');
 const hex64 = require("hex64");
 const { catchAsync } = require('../utils');
 const router = express.Router();
-const creds = JSON.parse(fs.readFileSync("./token.json"));
-const CLIENT_ID = creds.id;
-const CLIENT_SECRET = creds.secret;
+const tcreds = JSON.parse(fs.readFileSync("./token.json"));
+const CLIENT_ID = tcreds.id;
+const CLIENT_SECRET = tcreds.secret;
 
 const redirect = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback');
 const redirect0 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=0');
@@ -19,14 +19,15 @@ router.get('/login', (req, res) => {
   if (req.query.cookie) {
     var info = JSON.parse(fs.readFileSync("./api/config.json",'utf8'));
     var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-    if (req.cookies.login) {
+    if (req.cookies.login != undefined) {
       a = req.cookies.login.split('-');
+      console.log(a);
       if (a[1] == info[a[0]]) {
-        tokens[a[1]] = [hex64.encode(a[2]), hex64.encode(a[3])];
+        tokens[a[1]] = [hex64.encode(a[2]), hex64.encode(a[3]), tokens[a[1]][2]];
         fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
           if (err) throw err;
         });
-        res.redirect(`/home/${a[0]}`);
+        res.redirect(`/home/${a[0]}?s=${tokens[a[1]][2]}`);
       } else {
         res.status(400).send("400 Bad Request: Cookie Data Incorrect");
       }
@@ -74,7 +75,10 @@ router.get('/callback', catchAsync(async (req, res) => {
     });
   const userJson = await userInfo.json();
   console.log(userJson);
-  const buf = crypto.randomBytes(64);
+  const buf = crypto.randomBytes(16).toString('hex');
+  var sha256 = crypto.createHash("SHA256");
+  sha256.update(userJson.id + buf, "ascii");
+  const hashed = sha256.digest("hex");
   info[`${userJson.id}`] = buf.toString('hex');
   fs.writeFile("./api/config.json", JSON.stringify(info), (err) => {
     if (err) throw err;
@@ -83,11 +87,11 @@ router.get('/callback', catchAsync(async (req, res) => {
   if (req.query.cookie == "1") {
     res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`, {maxAge: 900000});
   }
-  tokens[userJson.id] = [json.access_token, json.refresh_token];
+  tokens[userJson.id] = [json.access_token, json.refresh_token, hashed];
   fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
     if (err) throw err;
   });
-  res.redirect(`/home/${userJson.id}`);
+  res.redirect(`/home/${userJson.id}?s=${buf}`);
 }));
 
 module.exports = router;
