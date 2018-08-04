@@ -35,9 +35,13 @@ client.on("message", (msg) => { // on every message that gets sent
   //msg.channel.send(msg.content); // echoes content
   if (admins.indexOf(msg.author.id) != -1) {
     if (msg.content == "&fetch") {
-      sgit().fetch("origin", "master");
+      msg.channel.send("Fetching...");
+      sgit.fetch("origin", "master");
+      msg.channel.send("Fetched.");
     } else if (msg.content == "&pull") {
-      sgit().pull("origin", "master");
+      msg.channel.send("Pulling...");
+      sgit.pull("origin", "master");
+      msg.channel.send("Pulled.");
     } else if (msg.content == "&restart") {
       msg.channel.send("Gotta go spiff up my code...");
       setTimeout(() => {
@@ -48,7 +52,13 @@ client.on("message", (msg) => { // on every message that gets sent
       setTimeout(() => {
         throw Error("Goodbye!");
       }, 500);
+    } else if (msg.content == "&stash") {
+      msg.channel.send("Stashing...");
+      sgit.stash();
+      msg.channel.send("Stashed.");
     }
+  } else {
+    msg.channel.send("You can't do that!");
   }
 });
 
