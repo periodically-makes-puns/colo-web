@@ -57,7 +57,7 @@ client.on("message", (msg) => { // on every message that gets sent
       sgit.stash();
       msg.channel.send("Stashed.");
     }
-  } else if (msg.startsWith("&")) {
+  } else if (msg.content.startsWith("&")) {
     msg.channel.send("You can't do that!");
   }
 });
