@@ -15,7 +15,7 @@ const btoa = require("btoa");
 const prefix = "^";
 const mintPrefix = "m^";
 const adminPrefix = "&";
-const sgit = require("simple-git")
+const sgit = require("simple-git")();
 
 const admins = ["262173579876106240", "248953835899322370"]
 
@@ -59,11 +59,12 @@ client.login(tcreds.token); // login with token
 
 // HERE BE EXPRESS.... THINGS
 
-
+var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
 // middleware
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(morgan('common'));
+app.use(morgan('common', {stream: accessLogStream}));
+
 app.engine('html', ejs.renderFile);
 app.set('view engine', 'html');
 
@@ -73,6 +74,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  var readLog = fs.readFileSync("./access.log", "utf8");
+  var lines = readLog.split("\n");
+  req.client.channels.get("475115017876930560").send("```http\n" + lines[lines.length-2] + "\n```");
+  next();
+}); 
 // 
 app.get('/', (req, res) => {
   res.status(200).sendFile(path.join(__dirname, 'public/index.html'));
@@ -86,14 +93,16 @@ app.use('/home', require("./home.js"));
 app.use((err, req, res, next) => {
   switch (err.message) {
     case 'NoCodeProvided':
+      console.log(err.message);
       res.status(400).send({
         status: 'ERROR',
-        error: err.message
+        error: err.message,
       });
     default:
+      console.log(err.message);
       res.status(500).send({
         status: 'ERROR',
-        error: err.message
+        error: err.message,
       });
   }
 });
