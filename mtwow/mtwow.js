@@ -1,5 +1,7 @@
 /* jshint esversion: 6 */
 const fs = require("fs");
+
+
 module.exports = (client, msg) => {
   const args = msg.content.split(/[^\w]+/g);
   const data = fs.readFileSync("mtwow.json", "utf-8");
@@ -53,7 +55,7 @@ module.exports = (client, msg) => {
         }, 10000);
         break;
       }
-      const response = resp.slice(3);
+      const response = args.slice(3);
       const ind = json.responses.findIndex((cur) => {
         return cur[0] == msg.author.id && cur[1] == respNum;
       });
@@ -63,5 +65,20 @@ module.exports = (client, msg) => {
         json.responses[ind] = [msg.author.id, respNum, response.join(" "), response.length];
       }
       break;
+    case "vote":
+      if (json.current != "vote") {
+        msg.channel.send("Sorry, but it's not yet voting time.");
+        setTimeout(() => {
+          // delete messages
+        }, 10000);
+        break;
+      }
+      if (json.currentVoteScreen[msg.author.id] == undefined) {
+        if (json.contestants.indexOf(msg.author.id) != -1) {
+          // noncontestant voting
+        } else {
+          // contestant voting
+        }
+      }
   }
 };
