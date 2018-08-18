@@ -20,16 +20,16 @@ client.on("message", (msg) => {
     if (msg.content.startsWith("&fetch")) {
       var args = msg.content.split(/[& ]+/g);
       if (args[2] == "") args[2] = "master";
-      msg.channel.send("Fetching...");
+      msg.channel.send("Fetching from branch " + args[2]);
       sgit.fetch("origin", args[2]);
       msg.channel.send("Fetched.");
     } else if (msg.content.startsWith("&pull")) {
       var args = msg.content.split(/[& ]+/g);
       if (args[2] == "") args[2] = "master";
-      msg.channel.send("Pulling...");
+      msg.channel.send("Pulling from branch " + args[2]);
       sgit.pull("origin", args[2]);
       msg.channel.send("Pulled.");
-    } else if (msg.content == "&restart") {
+    } else if (msg.content.startsWith("&restart")) {
       msg.channel.send("Gotta go spiff up my code...");
       setTimeout(() => {
         restart();
@@ -39,13 +39,21 @@ client.on("message", (msg) => {
       setTimeout(() => {
         throw Error("Goodbye!");
       }, 500);
-    } else if (msg.content == "&stash") {
+    } else if (msg.content.startsWith("&stash")) {
       msg.channel.send("Stashing...");
       sgit.stash();
       msg.channel.send("Stashed.");
+    } else if (msg.content.startsWith("&")) {
+      msg.channel.send("That isn't a valid function.");
     }
   } else if (msg.content.startsWith("&")) {
     msg.channel.send("You can't do that!");
+  } else if (msg.content.startsWith("^")) {
+    if (msg.content == "^") {
+      msg.channel.send("Yeah, I totally agree as well.");
+    }
+  } else if (msg.content.startsWith("m^")) {
+    mtwow(client, msg);
   }
 });
 
