@@ -1,8 +1,9 @@
 node_modules
 api/config.json
-packagelock.json
+package-lock.json
 token.json
 access.json
-mtwow.json
+mtwow/mtwow.json
 access.json
 access.log
+protecc

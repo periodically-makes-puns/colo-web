@@ -5,15 +5,15 @@ const crypto = require("crypto");
 const btoa = require('btoa');
 const fs = require('fs');
 const hex64 = require("hex64");
-const { catchAsync } = require('../utils');
+const { catchAsync } = require("../utils.js");
 const router = express.Router();
 const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 const CLIENT_ID = tcreds.id;
 const CLIENT_SECRET = tcreds.secret;
 
-const redirect = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback');
-const redirect0 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=0');
-const redirect1 = encodeURIComponent('http://voting.pmpuns.com/api/discord/callback?cookie=1');
+const redirect = encodeURIComponent('https://www.pmpuns.com/api/discord/callback');
+const redirect0 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=0');
+const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=1');
 
 router.get('/login', (req, res) => {
   if (req.query.cookie) {
