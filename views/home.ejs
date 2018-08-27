@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Welcome <%= user.username %></title>
+    <link rel="stylesheet" type="text/css" href="/home.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <ul class="navbar">
+    <li class="navlink active"><a id="home" href="/user/<%= user.id %>/home">Home</a></li>
+    <li class="navlink"><a id="respond" href="/user/<%= user.id %>/respond">Respond</a></li>
+    <li class="navlink"><a id="vote" href="/user/<%= user.id %>/vote">Vote</a></li>
+      <li class="navlink right"><a id="logout" href="/logout">Logout</a></li>
+      <li class="navlink right"><p><%= user.username %></p></li>
+    </ul>
+    <div class="content">
+      <h1>Welcome, <%= user.username %>.</h1>
+    </div>
+    <div class="info">
+      <h2>The current status is </h2>
+      <h1 id="status"><%= status %></h1>
+      <h2>.</h2>
+    </div>
+    <div class="infobox">
+    <% switch (status) { 
+      case "signups": 
+        if (signed_up) { %>
+          <h2 style="color: #4CAF50;"><strong>You've signed up already!</strong></h2>
+        <%} else {%> 
+          <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
+          <button onclick="$.post('/user/<%= user.id %>/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
+        <%} 
+        break; 
+      case "responding":
+        if (numResps == undefined) {%>
+          <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
+          <button onclick="$.post('/user/<%= user.id %>/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
+        <%} else if (subResps < numResps) {%>
+          <h2 style="color: red;"><strong>You've submitted <%= subResps %> of your <%= numResps %> responses!</strong></h2>
+          <button onclick="window.location.href='./respond'" type="button" class="button">Submit!</button>
+        <%} else if (over) {%>
+          <h2 style="color: red;"><strong>You have responses over the word count!</strong></h2>
+          <button onclick="window.location.href='./respond'" type="button" class="button">Edit!</button>
+        <%} else {%>
+          <h2 style="color: #4CAF50;"><strong>You've submitted everything already!</strong></h2>
+          <button onclick="window.location.href='./respond'" type="button" class="button">Edit!</button>
+        <%}
+        break;
+      case "voting":
+        if (numVotes == undefined) {%>
+          <h2 style="color: red;"><strong>You haven't requested a voting screen yet!</strong></h2>
+          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+        <%} else if (numVotes == 0) {%>
+          <h2 style="color: red;"><strong>You've requested a voting screen, but you haven't voted yet!</strong></h2>
+          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+        <%} else if (numVotes < subResps) {%>
+          <h2 style="color: red;"><strong>You haven't voted on all your responses yet!</strong></h2>
+          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+        <%} else {%>
+          <h2 style="color: #4CAF50;"><strong>You've voted on all your responses, but you should keep voting!</strong></h2>
+          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+        <%}
+    }%>
+    </div>
+  </body>
+  
+</html>

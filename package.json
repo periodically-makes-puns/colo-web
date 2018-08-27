@@ -9,10 +9,16 @@
     "btoa": "^1.2.1",
     "cookie-parser": "^1.4.3",
     "discord.js": "^11.3.2",
+    "ejs": "2.6.1",
+    "ejs-lint": "^0.3.0",
     "express": "^4.16.3",
+    "hex64": "^0.4.0",
+    "morgan": "1.9.0",
     "node-fetch": "^2.1.2",
+    "proc-restart": "^0.0.1",
+    "simple-git": "^1.96.0",
     "sqlite": "^2.9.2",
-    "sgit": "^0.3.2"
+    "random-js": "^1.0.8"
   },
   "engines": {
     "node": "9.x"

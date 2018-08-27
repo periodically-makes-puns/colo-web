@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title><%= user.id %></title>
+    <link rel="stylesheet" type="text/css" href="/respond.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
+    <script src="/respond.js"></script>
+  </head>
+  <body>
+    <ul class="navbar">
+    <li class="navlink"><a id="home" href="/user/<%= user.id %>/home">Home</a></li>
+    <li class="navlink active"><a id="respond" href="/user/<%= user.id %>/respond">Respond</a></li>
+    <li class="navlink"><a id="vote" href="/user/<%= user.id %>/vote">Vote</a></li>
+      <li class="navlink right"><a id="logout" href="/logout">Logout</a></li>
+      <li class="navlink right"><p><%= user.username %></p></li>
+    </ul>
+    <div class="content">
+      <h1>Welcome, <%= user.username %>.</h1>
+    </div>
+    <div class="responses">
+      <% if(numResps) {
+        for(var i = 1; i < numResps+1; i++) { 
+          ind = responses.findIndex((ele) => {return ele[1] == i;}); 
+          if (ind != -1) {
+            resp = responses[ind];%>
+            <div class="respcont" style="background-color: <%=(resp[3] > 10) ? '#cc0000' : 'green'%>;">
+              <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
+              <form class="response" style="padding-bottom: 4px">
+                <input class="response entry" type="text" name="response<%= i %>" value="<%= resp[2] %>" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> maxlength="2000" <%= (!isRes) ? "readonly" : ""%> onkeypress="return event.keyCode != 13;" >
+                <div class="response wc"><h3 class="response wc"><%= resp[3]%> word<%= (resp[3] != 1) ? "s" : "" %></h3></div>
+                <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>" >Submit!</button>
+              </form>
+            </div>
+          <%} else {%>
+            <div class="respcont">
+            <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
+              <form class="response" style="padding-bottom: 4px">
+                <input class="response entry" type="text" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> name="response<%= i %>" <%= (!isRes) ? "readonly" : ""%> onkeypress="return event.keyCode != 13;" maxlength="2000">
+                <div class="response wc"><h3 class="response wc">0 words</h3></div>
+                <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>">Submit!</button>
+              </form>
+            </div>
+          <% }
+        }} else {%>
+          <div class="infobox">
+            <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
+            <button onclick="$.post('/user/<%= user.id %>/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
+          </div>  
+        <% } %>
+    </div>
+  </body>
+</html>
