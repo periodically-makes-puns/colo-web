@@ -1,3 +1,5 @@
+/* jshint esversion: 6 */
+
 const catchAsyncErrors = fn => (
   (req, res, next) => {
     const routePromise = fn(req, res, next);
