@@ -25,14 +25,23 @@ module.exports = async (client, msg) => {
       break;
     case "startvote": 
       json.current = "vote";
-      for (let i = 0; i < json.contestants.length; i++) {
+      for (let i = json.contestants.length - 1; i >= 0 ; i++) {
         try {
-          const contestant = client.guilds.get("439313069613514752").members.get(json.contestants[i]);
+          const id = json.contestants[i];
+          const contestant = client.guilds.get("439313069613514752").members.get(id);
           if (contestant.roles.has("481812076050907146")) {
             client.channels.get("480897127262715924").send(`Contestant ${contestant.name} has DNPed. Revoking roles now.`);
+            await contestant.removeRoles(["481812076050907146", "481812129096138772", "481831093964636161"]);
+            await contestant.addRole("481831151674327042");
+            json.contestants.splice(i);
+            delete json.respCount[id];
+            delete json.actualRespCount[id];
+          } else if (contestant.roles.has("481812129096138772")) {
+            client.channels.get("480897127262715924").send(`Contestant ${contestant.name} lost some responses. Revoking roles now.`);
+            await contestant.removeRole("481812129096138772");
           }
         } catch (e) {
-
+          client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Something went wrong when updating contestant with ID ${json.contestants[i]}! <@248953835899322370> ⚠`);
         }
       }
     }
