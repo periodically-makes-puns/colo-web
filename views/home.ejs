@@ -52,16 +52,16 @@
       case "voting":
         if (numVotes == undefined) {%>
           <h2 style="color: red;"><strong>You haven't requested a voting screen yet!</strong></h2>
-          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+          <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%} else if (numVotes == 0) {%>
           <h2 style="color: red;"><strong>You've requested a voting screen, but you haven't voted yet!</strong></h2>
-          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+          <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%} else if (numVotes < subResps) {%>
           <h2 style="color: red;"><strong>You haven't voted on all your responses yet!</strong></h2>
-          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+          <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%} else {%>
           <h2 style="color: #4CAF50;"><strong>You've voted on all your responses, but you should keep voting!</strong></h2>
-          <button onclick="$.post('/user/<%= user.id %>/vote'); window.location.reload();" type="button" class="button">Vote!</button>
+          <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%}
     }%>
     </div>

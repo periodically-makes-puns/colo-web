@@ -16,13 +16,15 @@
     "ejs": "2.6.1",
     "ejs-lint": "^0.3.0",
     "express": "^4.16.3",
+    "firebase": "^5.4.1",
+    "firebase-tools": "^4.2.1",
     "hex64": "^0.4.0",
     "morgan": "1.9.0",
     "node-fetch": "^2.1.2",
     "proc-restart": "^0.0.1",
+    "random-js": "^1.0.8",
     "simple-git": "^1.96.0",
-    "sqlite": "^2.9.2",
-    "random-js": "^1.0.8"
+    "sqlite": "^2.9.2"
   },
   "engines": {
     "node": "9.x"

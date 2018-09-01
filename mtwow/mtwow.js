@@ -138,8 +138,8 @@ module.exports = (client, msg) => {
         mt.autoSeed();
         let seed = Random.integer(1, 11881376)(mt);
         mt.seed(seed);
+        json.voteCount[msg.author.id] = (json.voteCount[msg.author.id]) ? json.voteCount[msg.author.id] : 0;
         if (json.contestants.indexOf(msg.author.id) != -1) {
-          json.voteCount[msg.author.id] = (json.voteCount[msg.author.id]) ? json.voteCount[msg.author.id] : 0;
           if (json.voteCount[msg.author.id] < json.actualRespCount[msg.author.id]) {
             gseed = `${seed}-${msg.author.id}-${json.voteCount[msg.author.id]+1}`;
             screen = sgen(gseed, "text");
@@ -164,6 +164,7 @@ module.exports = (client, msg) => {
         voteNum = parseInt(args[3]) || json.voteCount[msg.author.id] + 1;
         if (!args[2]) {
           msg.channel.send("Are you missing your vote? You need a vote.");
+          msg.channel.send(`Just to clarify, this is your current screen:\n\n${sgen(json.currentVoteScreen[msg.author.id], "text")}`);
           return;
         }
         let used = [false, false, false, false, false, false, false, false, false, false];
@@ -203,7 +204,6 @@ module.exports = (client, msg) => {
           mt.autoSeed();
           let seed = Random.integer(1, 11881376)(mt);
           mt.seed(seed);
-          json.voteCount[msg.author.id] = (json.voteCount[msg.author.id]) ? json.voteCount[msg.author.id] : 0;
           if (json.voteCount[msg.author.id] < json.actualRespCount[msg.author.id]) {
             gseed = `${seed}-${msg.author.id}-${json.voteCount[msg.author.id]+1}`;
             screen = sgen(gseed, "text");

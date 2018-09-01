@@ -69,10 +69,56 @@ li.navlink.active {
 }
 
 div.respcont * {
-  display: inline;
+  display: inline-block;
+  margin: auto;
+  line-height: 50px;
+  vertical-align: center;
 }
 
-ul {
-  list-style: none;
-  
+div.votescreen {
+  margin: auto;
+  max-width: 960px;
 }
+
+#currscreen {
+  list-style: none;
+}
+
+div.respcont {
+  border-radius: 10px;
+  width: 870px;
+  height: 50px;
+  padding: 0px 3px;
+  margin: 3px 0px;
+  border: 5px solid #000;
+}
+
+div.respcont.valid {
+  background-color: #4CAF50;
+  border-color: #1f4721;
+}
+
+div.respcont.invalid {
+  background-color: #cc0000;
+  border-color: #660000;
+}
+
+div div.vl {
+  box-sizing: border-box;
+  min-width: 30px;
+  text-align: center;
+}
+
+div .response {
+  width: 800px;
+  height: 30px;
+  white-space: nowrap;
+  font-size: 18px;
+}
+
+div div.wc {
+  box-sizing: border-box;
+  min-width: 22px;
+  text-align: center;
+}
+

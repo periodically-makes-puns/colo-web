@@ -119,11 +119,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/discord', require('./api/discord.js'));
 app.use('/user', require("./user.js"));
-app.get('/logout', (req, res, next) => {
-  res.clearCookie("login");
-  res.clearCookie("s");
-  res.redirect("http://localhost:50541");
-});
 
 app.use((err, req, res, next) => {
   switch (err.message) {
@@ -143,7 +138,8 @@ app.use((err, req, res, next) => {
   }
 });
 
-app.listen(50541, () => {
+client.login(tcreds.token)
+.then((tkn) => {app.listen(50541, () => {
   console.info('Running on port 50541');
-});
+});}).catch(console.error);
 
