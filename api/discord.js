@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const btoa = require('btoa');
 const fs = require('fs');
 const hex64 = require("hex64");
-const { catchAsync } = require("../utils.js");
+const { catchAsync } = require('../utils');
 const router = express.Router();
 const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 const CLIENT_ID = tcreds.id;
@@ -16,26 +16,25 @@ const redirect0 = encodeURIComponent('https://www.pmpuns.com/api/discord/callbac
 const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=1');
 
 router.get('/login', (req, res) => {
-  if (req.query.cookie) {
-    var info = JSON.parse(fs.readFileSync("./api/config.json",'utf8'));
-    var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-    if (req.cookies.login != undefined) {
-      a = req.cookies.login.split('-');
-      console.log(a);
-      if (a[1] == info[a[0]]) {
-        tokens[a[1]] = [hex64.encode(a[2]), hex64.encode(a[3]), tokens[a[1]][2]];
-        fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
-          if (err) throw err;
-        });
-        res.redirect(`/home/${a[0]}?s=${tokens[a[1]][2]}`);
-      } else {
-        res.status(400).send("400 Bad Request: Cookie Data Incorrect");
-      }
+  var info = JSON.parse(fs.readFileSync("./api/config.json",'utf8'));
+  var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
+  if (req.cookies.login != undefined) {
+    a = req.cookies.login.split('-');
+    console.log(a);
+    if (a[1] == info[a[0]].toString("hex")) { 
+      console.log(a[0]);
+      console.log(tokens[a[0]]);
+      tokens[a[0]] = [hex64.encode(a[2]), hex64.encode(a[3]), tokens[a[0]][2]];
+      fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
+        if (err) throw err;
+      });
+      res.cookie("s", info[a[0]]);
+      res.redirect(`/user/${a[0]}/home`);
     } else {
-      res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect1}&response_type=code&scope=identify`);
+      res.status(400).send("400 Bad Request: Cookie Data Incorrect");
     }
   } else {
-    res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect0}&response_type=code&scope=identify`);
+    res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect1}&response_type=code&scope=identify`);
   }
 });
 
@@ -75,23 +74,24 @@ router.get('/callback', catchAsync(async (req, res) => {
     });
   const userJson = await userInfo.json();
   console.log(userJson);
-  const buf = crypto.randomBytes(16).toString('hex');
+  const buf = crypto.randomBytes(64).toString('hex');
   var sha256 = crypto.createHash("SHA256");
   sha256.update(userJson.id + buf, "ascii");
   const hashed = sha256.digest("hex");
-  info[`${userJson.id}`] = buf.toString('hex');
+  info[`${userJson.id}`] = buf;
   fs.writeFile("./api/config.json", JSON.stringify(info), (err) => {
     if (err) throw err;
   });
   req.client.users.get("248953835899322370").send(`User ${userJson.username}#${userJson.discriminator} with ID ${userJson.id} logged in at ${new Date().toString()}`);
   if (req.query.cookie == "1") {
-    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`, {maxAge: 900000});
+    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`);
   }
   tokens[userJson.id] = [json.access_token, json.refresh_token, hashed];
   fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
     if (err) throw err;
   });
-  res.redirect(`/home/${userJson.id}?s=${buf}`);
+  res.cookie("s", buf);
+  res.redirect(`/user/${userJson.id}/home`);
 }));
 
 module.exports = router;

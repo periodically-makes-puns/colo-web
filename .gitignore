@@ -4,6 +4,6 @@ package-lock.json
 token.json
 access.json
 mtwow/mtwow.json
-access.json
+.gitattributes
 access.log
 protecc
