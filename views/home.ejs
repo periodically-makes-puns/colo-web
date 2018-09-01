@@ -35,7 +35,7 @@
         <%} 
         break; 
       case "responding":
-        if (numResps == undefined) {%>
+        if (!numResps) {%>
           <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
           <button onclick="$.post('/user/<%= user.id %>/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
         <%} else if (subResps < numResps) {%>
@@ -50,17 +50,17 @@
         <%}
         break;
       case "voting":
-        if (numVotes == undefined) {%>
+        if (!numVotes) {%>
           <h2 style="color: red;"><strong>You haven't requested a voting screen yet!</strong></h2>
           <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%} else if (numVotes == 0) {%>
           <h2 style="color: red;"><strong>You've requested a voting screen, but you haven't voted yet!</strong></h2>
           <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
-        <%} else if (numVotes < subResps) {%>
+        <%} else if (subResps && (numVotes < subResps)) {%>
           <h2 style="color: red;"><strong>You haven't voted on all your responses yet!</strong></h2>
           <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%} else {%>
-          <h2 style="color: #4CAF50;"><strong>You've voted on all your responses, but you should keep voting!</strong></h2>
+          <h2 style="color: #4CAF50;"><strong>You've voted enough times, but you should keep voting!</strong></h2>
           <button onclick="window.location.href='./vote' window.location.reload();" type="button" class="button">Vote!</button>
         <%}
     }%>

@@ -17,11 +17,12 @@ $(document).ready(() => {
     }
   });
   $("#trigger").click((e) => {
-    let vote = "";
-    $("h3.vl").each(() => {
-      vote += $(this).text();
+    let vote = $("#votelets").val();
+    $.post(`/user/${id}/vote`, {
+      screenNum: screenNum,
+      vote: vote,
+      seed: seed,
     });
-    $.post(`/user/${id}/screenNum=${screenNum}&seed=${seed}&vote?vote=${vote}`);
     window.location.href = `/user/${id}/vote`;
   });
 });

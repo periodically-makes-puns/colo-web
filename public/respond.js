@@ -18,7 +18,9 @@ $(document).on("input", ".entry", function (event) {
 
 $(document).on("click", ".submit", (event) => {
   $(".entry").each((ind, ele) => {
-    $.post(`/user/${id}/respond?${encodeURIComponent(ele.name)}=${encodeURIComponent(ele.value.trim())}`);
+    let body = {};
+    body[ele.name] = ele.value.trim();
+    $.post(`/user/${id}/respond`, body);
   });
   location.reload(true);
 });

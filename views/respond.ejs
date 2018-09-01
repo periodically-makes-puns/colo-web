@@ -23,14 +23,14 @@
     <div class="responses">
       <% if(numResps) {
         for(var i = 1; i < numResps+1; i++) { 
-          ind = responses.findIndex((ele) => {return ele[1] == i;}); 
+          ind = responses.findIndex((ele) => {return ele.respNum == i;}); 
           if (ind != -1) {
             resp = responses[ind];%>
-            <div class="respcont" style="background-color: <%=(resp[3] > 10) ? '#cc0000' : 'green'%>;">
+            <div class="respcont" style="background-color: <%=(resp.wc > 10) ? '#cc0000' : 'green'%>;">
               <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
               <form class="response" style="padding-bottom: 4px">
-                <input class="response entry" type="text" name="response<%= i %>" value="<%= resp[2] %>" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> maxlength="2000" <%= (!isRes) ? "readonly" : ""%> onkeypress="return event.keyCode != 13;" >
-                <div class="response wc"><h3 class="response wc"><%= resp[3]%> word<%= (resp[3] != 1) ? "s" : "" %></h3></div>
+                <input class="response entry" type="text" name="response<%= i %>" value="<%= resp.response %>" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> maxlength="2000" <%= (!isRes) ? "readonly" : ""%> onkeypress="return event.keyCode != 13;" >
+                <div class="response wc"><h3 class="response wc"><%= resp.wc%> word<%= (resp.wc != 1) ? "s" : "" %></h3></div>
                 <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>" >Submit!</button>
               </form>
             </div>

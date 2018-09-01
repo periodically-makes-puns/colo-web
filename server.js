@@ -84,14 +84,13 @@ client.on("message", (msg) => { // on every message that gets sent
 
 const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 
-client.login(tcreds.token); // login with token
 // token not shown
 
 // HERE BE EXPRESS.... THINGS
 
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
 // middleware
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true}));
 app.use(cookieParser());
 app.use(morgan('common', {stream: accessLogStream}));
 
