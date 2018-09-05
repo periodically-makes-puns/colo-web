@@ -6,14 +6,13 @@
     <title><%= user.id %></title>
     <link rel="stylesheet" type="text/css" href="/respond.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha384-tsQFqpEReu7ZLhBV2VZlAu7zcOV+rXbYlF2cqB8txI/8aZajjp4Bqd+V6D5IgvKT" crossorigin="anonymous"></script>
-    <script src="/respond.js"></script>
   </head>
   <body>
+    
     <ul class="navbar">
-    <li class="navlink"><a id="home" href="/user/<%= user.id %>/home">Home</a></li>
-    <li class="navlink active"><a id="respond" href="/user/<%= user.id %>/respond">Respond</a></li>
-    <li class="navlink"><a id="vote" href="/user/<%= user.id %>/vote">Vote</a></li>
+      <li class="navlink"><a id="home" href="/user/home">Home</a></li>
+      <li class="navlink active"><a id="respond" href="/user/respond">Respond</a></li>
+      <li class="navlink"><a id="vote" href="/user/vote">Vote</a></li>
       <li class="navlink right"><a id="logout" href="/logout">Logout</a></li>
       <li class="navlink right"><p><%= user.username %></p></li>
     </ul>
@@ -47,9 +46,11 @@
         }} else {%>
           <div class="infobox">
             <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
-            <button onclick="$.post('/user/<%= user.id %>/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
+            <button onclick="$.post('/user/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
           </div>  
         <% } %>
     </div>
   </body>
+  <script src="/jquery-3.3.1.js"></script>
+  <script src="/respond.js"></script>
 </html>

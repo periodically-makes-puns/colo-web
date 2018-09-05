@@ -1,4 +1,21 @@
 /*jshint esversion: 6*/
+const SQLite = require("better-sqlite3");
+var data = new SQLite("./mtwow/mtwow.sqlite");
+/*
+data.prepare("DROP TABLE IF EXISTS Status;").run();
+data.prepare("DROP TABLE IF EXISTS Contestants;").run();
+data.prepare("DROP TABLE IF EXISTS Voters;").run();
+data.prepare("DROP TABLE IF EXISTS Responses;").run();
+data.prepare("DROP TABLE IF EXISTS Votes;").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Status (current string NOT NULL, prompt string);").run();
+data.prepare("INSERT INTO Status (current, prompt) VALUES ('responding', 'no u');").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Contestants (userid text primary key, subResps integer, numResps integer);").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Voters (userid text primary key, voteCount integer);").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Responses (id integer primary key, userid text, respNum integer, response text, words integer);").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Votes (id integer primary key, userid text, voteNum integer, seed text, vote text);").run();
+console.log("Done.");
+*/
+
 const fs = require("fs");
 const sgit = require("simple-git")();
 const morgan = require("morgan");
@@ -7,6 +24,7 @@ const path = require('path');
 const http = require("http");
 const https = require("https");
 const Discord = require("discord.js");
+const ejs = require("ejs");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const client = new Discord.Client();
@@ -22,10 +40,10 @@ const mtwow = require("./mtwow/mtwow.js");
 const madmin = require("./mtwow/madmin.js");
 const restart = require('proc-restart');
 
+
+
 // discord requires
-client.on("ready", () => { // when bot is ready to go
-  console.log("Ready to go!");
-});
+
 
 client.on("message", (msg) => { // on every message that gets sent
   // run this stuff
@@ -90,6 +108,15 @@ var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
 app.use(bodyParser.urlencoded({ extended: true}));
 app.use(cookieParser());
 app.use(morgan('common', {stream: accessLogStream}));
+app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", "data:"],
+    scriptSrc: ["'self'", "'sha256-V5MGK9/CO7JvQzUHNNiGSkY2upVgeB0jGjzDUeKicl8='", "'sha256-Fi2rhYYy0MhXdVQgpTA1q0d2RyIsSP9Z69PjN85GiYg='", "'sha256-G7bcDiYmXiz83JPv7w1RK1CKFhJ38I0NutSnzhNmHMI='", "'sha256-0p7PxxIIvj4LCxwSZPKtMp1fOWhDvyYffGYgf56gSgI='"],
+  },
+}));
 
 app.engine('html', ejs.renderFile);
 app.set('view engine', 'html');
@@ -116,6 +143,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/discord', require('./api/discord.js'));
 app.use('/user', require("./user.js"));
 app.use((err, req, res, next) => {
+  console.error(err);
   switch (err.message) {
     case 'NoCodeProvided':
       return res.status(400).send({
@@ -130,8 +158,14 @@ app.use((err, req, res, next) => {
   }
 });
 
+client.login(tcreds.token);
+
 var httpServer = http.createServer(app);
 var httpsServer = https.createServer(credentials, app);
 
-httpServer.listen(80);
-httpsServer.listen(443);
+client.on("ready", () => { // when bot is ready to go
+  httpServer.listen(80);
+  httpsServer.listen(443);
+  console.log("Ready to go!");
+});
+

@@ -3,6 +3,25 @@ const fs = require("fs");
 const Random = require("random-js");
 var mt = Random.engines.mt19937();
 const sgen = require("./screengen.js");
+const SQLite = require("better-sqlite3");
+var data = new SQLite("./mtwow/mtwow.sqlite");
+
+var getStatus = data.prepare("SELECT current FROM Status;");
+var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid ORDER BY respNum;");
+var getContestantData = data.prepare("SELECT * FROM Contestants WHERE userid = @userid;");
+var getVoterData = data.prepare("SELECT * FROM Voters WHERE userid = @userid;");
+var getVotes = data.prepare("SELECT * FROM Votes WHERE userid = @userid ORDER BY voteNum;");
+var getVoteSeeds = data.prepare("SELECT seed FROM Votes WHERE userid = @userid ORDER BY voteNum;");
+var getRespsOverWC = data.prepare("SELECT * FROM Responses WHERE userid = @userid AND words > 10;");
+var addResponse = data.prepare("INSERT INTO Responses (userid, respNum, response, words) VALUES (@userid, @respNum, @response, @wc);");
+var addVoteSeed = data.prepare("INSERT INTO Votes (userid, voteNum, seed) VALUES (@userid, @voteNum, @seed);");
+var editVote = data.prepare("UPDATE Votes SET vote = @vote WHERE userid = @userid AND voteNum = @voteNum;");
+var editResponse = data.prepare("UPDATE Responses SET response = @response, words = @wc WHERE userid = @userid AND respNum = @respNum;");
+var editVoteCount = data.prepare("UPDATE Voters SET voteCount = @voteCount WHERE userid = @userid;");
+var editSubResps = data.prepare("UPDATE Contestants SET subResps = @subResps WHERE userid = @userid;");
+var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps) VALUES (@userid, @subResps, @numResps);");
+var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@userid, 0)");
+var numContestants = data.prepare("SELECT count(*) FROM Contestants;")
 
 const filter = (arr, func) => {
   let otp = [];
@@ -16,13 +35,12 @@ const filter = (arr, func) => {
 
 module.exports = (client, msg) => {
   const log = client.channels.get("480897127262715924");
-  const args = msg.content.split(/[\^\s]+/g);
-  const data = fs.readFileSync("./mtwow/mtwow.json", "utf-8");
   const json = JSON.parse(data);
   // args[0] is empty, args[1] has command, args[2]+ are arguments to the command
   switch (args[1]) {
     case "signup":
-      if (json.current != "signups") {
+      let contestantData = getContestantData.get({userid: msg.author.id});
+      if (getStatus.get().current != "signups") {
         msg.channel.send("Sorry, but you can't sign up right now. Maybe later?")
         .then(msg => {sent = msg;})
         .catch(console.error);
@@ -31,7 +49,7 @@ module.exports = (client, msg) => {
           msg.delete();
         }, 10000);
       } else {
-        if (json.contestants.indexOf(msg.author.id) != -1) {
+        if (contestantData) {
           msg.channel.send("Sorry, but you've already signed up!")
           .then(msg => {sent = msg;})
           .catch(console.error);
@@ -40,22 +58,21 @@ module.exports = (client, msg) => {
             msg.delete();
           }, 10000);
         } else {
-          json.contestants.push(msg.author.id);
-          json.respCount[msg.author.id] = 1;
-          json.actualRespCount[msg.author.id] = 0;
-          json.voteCount[msg.author.id] = 0;
+          addContestant({userid: msg.author.id, subResps: 0, numResps: 1});
           msg.channel.send("Signed up!")
           .then(msg => {sent = msg;})
           .catch(console.error);
           setTimeout(() => {
             sent.delete();
           }, 10000);
-          log.send(`${msg.author.username} signed up! There are now ${json.contestants.length} contestants!`);
+          log.send(`${msg.author.username} signed up! There are now ${numContestants.get()["count(*)"]} contestants!`);
         }
       }
       break;
     case "respond":
-      if (json.current != "responding") {
+      let contestantData = getContestantData.get({userid: msg.author.id});
+      let responses = getResponses.all({userid: msg.author.id}) || [];
+      if (getStatus.get().current != "responding") {
         msg.channel.send("Not time to respond yet.")
         .then(msg => {sent = msg;})
         .catch(console.error);
@@ -75,12 +92,9 @@ module.exports = (client, msg) => {
         }, 10000);
         break;
       }
-      
-      if (json.contestants.indexOf(msg.author.id) == -1) {
-        json.contestants.push(msg.author.id);
-        json.respCount[msg.author.id] = 1;
-        json.actualRespCount[msg.author.id] = 0;
-        json.voteCount[msg.author.id] = 0;
+      if (!contestantData) {
+        addContestant.run({userid: msg.author.id, subResps: 0, numResps: 1});
+        
         /*
         msg.channel.send("You're no contestant! Get out!")
         .then(msg => {sent = msg;})
@@ -92,9 +106,9 @@ module.exports = (client, msg) => {
         break;
         */
       }
-      
+      contestantData = getContestantData.get({userid: msg.author.id});
       const respNum = parseInt(args[2]);
-      if (respNum > json.respCount[msg.author.id]) {
+      if (respNum > contestantData.numResps) {
         msg.channel.send("You don't have that many responses!")
         .then(msg => {sent = msg;})
         .catch(console.error);
@@ -105,25 +119,22 @@ module.exports = (client, msg) => {
         break;
       }
       const response = args.slice(3);
-      const ind = json.responses.findIndex((cur) => {
-        return cur[0] == msg.author.id && cur[1] == respNum;
+      const resp = responses.findIndex((val) => {
+        return val.respNum == respNum;
       });
-      if (ind == -1) {
-        json.responses.push([msg.author.id, respNum, response.join(" "), response.length]);
-        json.respCount[msg.author.id]++;
+      if (resp == -1) {
+        addResponse.run({userid: msg.author.id, respNum: respNum, response: response.join(" "), wc: response.length});
+        editSubResps.run({userid: msg.author.id, subResps: contestantData.subResps + 1});
       } else {
-        json.responses[ind] = [msg.author.id, respNum, response.join(" "), response.length];
+        editResponse.run({userid: msg.author.id, respNum: respNum, response: response.join(" "), wc: response.length});
       }
-      var responses = filter(json.responses, (obj, ind, arr) => {
-        return obj[0] == msg.author.id;
+      let inds = data.prepare("SELECT respNum FROM Responses WHERE userid = @userid").all({userid: msg.author.id}).forEach((val, ind, arr) => {
+        arr[ind] = val.respNum;
       });
-      responses.forEach((obj, ind, arr) => {
-        arr[ind] = obj[1];
-      });
-      msg.channel.send(`Your response has been recorded. This is response index ${respNum}. You have sent ${json.respCount[msg.author.id]} of your ${json.actualRespCount[msg.author.id]} responses. You have sent in responses with these indices: ${responses.join(", ")}.\n\nYour response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words`);
+      msg.channel.send(`Your response has been recorded. This is response index ${respNum}. You have sent ${contestantData.numResps} of your ${contestantData.subResps + 1} responses. You have sent in responses with these indices: ${inds.join(", ")}.\n\nYour response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words`);
       break;
     case "vote":
-      if (json.current != "voting") {
+      if (getStatus.get().current != "voting") {
         msg.channel.send("Sorry, but it's not yet voting time.")
         .then((msg) => {sent = msg;})
         .catch(console.error);
@@ -133,15 +144,20 @@ module.exports = (client, msg) => {
         break;
       }
       let screen;
-      if (!json.currentVoteScreen.hasOwnProperty(msg.author.id)) {
+      let voterData = getVoterData.get({userid: msg.author.id});
+      let contestantData = getContestantData.get({userid: msg.author.id});
+      let seeds = getVoteSeeds.all({userid: msg.author.id});
+      if (!seeds) {
         let gseed;
         mt.autoSeed();
         let seed = Random.integer(1, 11881376)(mt);
         mt.seed(seed);
-        json.voteCount[msg.author.id] = (json.voteCount[msg.author.id]) ? json.voteCount[msg.author.id] : 0;
-        if (json.contestants.indexOf(msg.author.id) != -1) {
-          if (json.voteCount[msg.author.id] < json.actualRespCount[msg.author.id]) {
-            gseed = `${seed}-${msg.author.id}-${json.voteCount[msg.author.id]+1}`;
+        if (!voterData) addVoter.run({userid: msg.author.id, voteCount: 0}); 
+        if (contestantData) {
+          voterData = getVoterData.get({userid: msg.author.id});
+          if (voterData.voteCount < contestatntData.subResps) {
+            voterData = getVoterData.get({userid: msg.author.id});
+            gseed = `${seed}-${msg.author.id}-${voterData.voteCount+1}`;
             screen = sgen(gseed, "text");
           } else {
             gseed = `${seed}`;
@@ -151,20 +167,19 @@ module.exports = (client, msg) => {
           gseed = `${seed}`;
           screen = sgen(gseed, "text");
         }
-        json.currentVoteScreen[msg.author.id] = gseed;
-        json.priorVoteScreens[msg.author.id] = [];
+        addVoteSeed.run({userid: msg.author.id, voteNum: voterData.voteCount+1, seed: gseed});
         fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
         msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
       } else {
         if (args[3]) {
-          screen = sgen(json.priorVoteScreens[msg.author.id][parseInt(args[3]) - 1], "internal");
+          screen = sgen(seeds[parseInt(args[3]) - 1], "internal");
         } else {
-          screen = sgen(json.currentVoteScreen[msg.author.id], "internal");
+          screen = sgen(seeds[seeds.length - 1], "internal");
         }
-        voteNum = parseInt(args[3]) || json.voteCount[msg.author.id] + 1;
+        voteNum = parseInt(args[3]) || voterData.voteCount + 1;
         if (!args[2]) {
           msg.channel.send("Are you missing your vote? You need a vote.");
-          msg.channel.send(`Just to clarify, this is your current screen:\n\n${sgen(json.currentVoteScreen[msg.author.id], "text")}`);
+          msg.channel.send(`Just to clarify, this is the screen you're voting on:\n\n${sgen(seeds[voteNum], "text")}`);
           return;
         }
         let used = [false, false, false, false, false, false, false, false, false, false];
@@ -175,52 +190,29 @@ module.exports = (client, msg) => {
           } else if (used[args[2].charCodeAt(i) - 65]) {
             msg.channel.send("A repeated character has been detected in your vote.");
             return;
-          } else {
-            used[args[2].charCodeAt(i) - 65] = (screen.length - i - 1) / (screen.length - 1);
           }
         }
-        let cnt = 0;
-        for (let i = 0; i < used.length; i++) {
-          if (used[i] === false) {
-            cnt++;
-          }
-        }
-        for (let i = 0; i < used.length; i++) {
-          if (used[i] === false) {
-            used[i] = (cnt - 1) / 2 / (screen.length - 1);
-          }
-        }
-        let otp = [msg.author.id, json.voteCount[msg.author.id] + 1, []];
-        for (let i = 0; i < json.responses.length; i++) {
-          otp[2].push(-1);
-        }
-        for (let i = 0; i < used.length; i++) {
-          otp[2][screen[i]] = used[i];
-        }
-        json.votes.push(otp);
-        json.voteCount[msg.author.id]++;
-        let gseed;
-        if (json.contestants.indexOf(msg.author.id) != -1) {
-          mt.autoSeed();
-          let seed = Random.integer(1, 11881376)(mt);
-          mt.seed(seed);
-          if (json.voteCount[msg.author.id] < json.actualRespCount[msg.author.id]) {
-            gseed = `${seed}-${msg.author.id}-${json.voteCount[msg.author.id]+1}`;
-            screen = sgen(gseed, "text");
+        editVote.run({userid: msg.author.id, voteNum: voteNum, vote: args[2]});
+        if (voteNum == voterData.voteCount + 1) {
+          editVoteCount.run({userid: msg.author.id, voteCount: voterData.voteCount + 1});
+          let gseed;
+          if (contestantData) {
+            mt.autoSeed();
+            let seed = Random.integer(1, 11881376)(mt);
+            mt.seed(seed);
+            if (voterData.voteCount + 1 < contestantData.subResps) {
+              gseed = `${seed}-${msg.author.id}-${voterData.voteCount + 2}`;
+            } else {
+              gseed = `${seed}`;
+            }
           } else {
             gseed = `${seed}`;
-            screen = sgen(gseed, "text");
           }
-        } else {
-          gseed = `${seed}`;
           screen = sgen(gseed, "text");
+          msg.channel.send(`Just to clarify, this was your previous screen:\n\n${sgen(seeds[seeds.length - 1], "text")}`);
+          addVoteSeed({userid: msg.author.id, voteNum: voterData.voteCount + 2, seed: gseed});
+          msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
         }
-        msg.channel.send(`Just to clarify, this was your previous screen:\n\n${sgen(json.currentVoteScreen[msg.author.id], "text")}`);
-        json.priorVoteScreens[msg.author.id].push(json.currentVoteScreen[msg.author.id]);
-        json.currentVoteScreen[msg.author.id] = gseed;
-        msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
       }
-      
   }
-  fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
 };

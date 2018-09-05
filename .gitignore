@@ -7,3 +7,5 @@ mtwow/mtwow.json
 .gitattributes
 access.log
 protecc
+mtwow.sqlite
+csrf.sqlite

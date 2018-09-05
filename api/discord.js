@@ -20,10 +20,7 @@ router.get('/login', (req, res) => {
   var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
   if (req.cookies.login != undefined) {
     a = req.cookies.login.split('-');
-    console.log(a);
     if (a[1] == info[a[0]].toString("hex")) { 
-      console.log(a[0]);
-      console.log(tokens[a[0]]);
       tokens[a[0]] = [hex64.encode(a[2]), hex64.encode(a[3]), tokens[a[0]][2]];
       fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
         if (err) throw err;
@@ -49,9 +46,7 @@ router.get('/callback', catchAsync(async (req, res) => {
     throw new Error('NoCodeProvided');
   }
   const code = req.query.code;
-  console.log(code);
   const creds = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-  console.log(creds);
   var red;
   if (req.query.cookie == "1") {
     red = redirect1;
@@ -65,7 +60,6 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const json = await response.json();
-  console.log(json);
   const userInfo = await fetch("https://discordapp.com/api/users/@me", {
       method: 'GET',
       headers: {
@@ -73,7 +67,6 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
-  console.log(userJson);
   const buf = crypto.randomBytes(64).toString('hex');
   var sha256 = crypto.createHash("SHA256");
   sha256.update(userJson.id + buf, "ascii");

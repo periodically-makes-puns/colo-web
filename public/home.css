@@ -84,7 +84,7 @@ div.info {
 }
 
 div.info h2 {
-  color: white;
+  background-color: inherit;
   display: inline;
 }
 
@@ -100,4 +100,8 @@ div.infobox {
 div.button {
   padding: 10px 20px;
   color: #4CAF50;  
+}
+
+strong {
+  color: inherit;
 }

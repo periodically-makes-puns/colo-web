@@ -11,25 +11,22 @@ const Random = require("random-js");
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 var csrf = new SQLite("./csrf.sqlite");
+
 var getStatus = data.prepare("SELECT current FROM Status;");
-var changeStatus = data.prepare("UPDATE Status SET current = @status;");
-var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid;");
-var getSpecificResp = data.prepare("SELECT * FROM Responses WHERE userid = @userid AND respNum = @respNum");
-var getUserData = data.prepare("SELECT * FROM (SELECT * FROM Contestants LEFT JOIN Votes USING(userid) UNION ALL SELECT * FROM Votes LEFT JOIN Contestants USING(userid) WHERE Contestants.userid IS NULL) WHERE userid = @userid;");
+var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid ORDER BY respNum;");
 var getContestantData = data.prepare("SELECT * FROM Contestants WHERE userid = @userid;");
 var getVoterData = data.prepare("SELECT * FROM Voters WHERE userid = @userid;");
-var getVotes = data.prepare("SELECT * FROM Votes WHERE userid = @userid;");
-var getSpecificVote = data.prepare("SELECT * FROM Votes WHERE userid = @userid AND voteNum = @voteNum;");
+var getVotes = data.prepare("SELECT * FROM Votes WHERE userid = @userid ORDER BY voteNum;");
+var getVoteSeeds = data.prepare("SELECT seed FROM Votes WHERE userid = @userid ORDER BY voteNum;");
 var getRespsOverWC = data.prepare("SELECT * FROM Responses WHERE userid = @userid AND words > 10;");
-var addResponse = data.prepare("INSERT INTO Responses (userid, respNum, response, wc) VALUES (@userid, @respNum, @response, @wc);");
+var addResponse = data.prepare("INSERT INTO Responses (userid, respNum, response, words) VALUES (@userid, @respNum, @response, @wc);");
 var addVoteSeed = data.prepare("INSERT INTO Votes (userid, voteNum, seed) VALUES (@userid, @voteNum, @seed);");
 var editVote = data.prepare("UPDATE Votes SET vote = @vote WHERE userid = @userid AND voteNum = @voteNum;");
-var editResponse = data.prepare("UPDATE Responses SET response = @response, wc = @wc WHERE userid = @userid AND respNum = @respNum;");
+var editResponse = data.prepare("UPDATE Responses SET response = @response, words = @wc WHERE userid = @userid AND respNum = @respNum;");
 var editVoteCount = data.prepare("UPDATE Voters SET voteCount = @voteCount WHERE userid = @userid;");
 var editSubResps = data.prepare("UPDATE Contestants SET subResps = @subResps WHERE userid = @userid;");
-var editNumResps = data.prepare("UPDATE Contestants SET numResps = @numResps WHERE userid = @userid;");
-var killContestant = data.prepare("DELETE FROM Contestants WHERE userid = @userid;");
-var addContestant = data.prepare("INSERT INTO Contestants (userid, subResos, numResps) VALUES (@userid, @subResps, @numResps);");
+var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps) VALUES (@userid, @subResps, @numResps);");
+var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@userid, 0)");
 
 var mt = Random.engines.mt19937();
 
@@ -45,20 +42,27 @@ const filter = (arr, func) => {
 
 router.use(express.static(path.join(__dirname, "public")));
 
-router.use("/:id", (req, res, next) => {
+router.use("/", (req, res, next) => {
   const data = fs.readFileSync("./access.json");
+  const json = JSON.parse(data);
   var sha256 = crypto.createHash("SHA256");
-  sha256.update(req.params.id + req.cookies.s, "ascii");
+  sha256.update(req.cookies.login.split("-")[0] + req.cookies.s, "ascii");
+  req.id = req.cookies.login.split("-")[0];
   try {
-    if (sha256.digest("hex") != json[req.params.id][2]) {
+    let a = sha256.digest("hex");
+    console.log(a);
+    if (a != json[req.id][2]) {
+      console.log("bad auth");
       res.status(403).send("Authentication details incorrect");
       return;
     }
   } catch (e) {
+    console.log("nonexistent auth");
     res.status(403).send("Authentication details incorrect");
     return;
   }
-  req.user = req.client.users.get(req.params.id);
+  req.user = req.client.users.get(req.cookies.login.split("-")[0]);
+  
   if (!req.user) {
     res.status(404).send("Not Found (psst you need to be on the server :D");
     return;
@@ -68,24 +72,25 @@ router.use("/:id", (req, res, next) => {
   next();
 });
 
-router.get("/:id/home", (req, res, next) => {
-  let userData = getUserData.get({userid: req.params.id});
-  let overWC = getRespsOverWC.all({userid: req.params.id});
+router.get("/home", (req, res, next) => {
+  let contestantData = getContestantData.get({userid: req.id}) || {subResps: 0, numResps: 0};
+  let voterData = getVoterData.get({userid: req.id}) || null;
+  let overWC = getRespsOverWC.all({userid: req.id});
   res.status(200).render("home.ejs", {
     'user': req.user,
     'status': getStatus.get().current,
-    'subResps': userData.subResps,
-    'numResps': userData.numResps,
-    'over': overWC.length > 0,
-    'numVotes': userData.voteCount,
-    "signed_up": userData.numResps,
+    'subResps': contestantData.subResps,
+    'numResps': contestantData.numResps,
+    'over': (overWC.length || 0) > 0,
+    'numVotes': voterData.voteCount,
+    "signed_up": contestantData.numResps,
   });
 });
 
-router.get("/:id/respond", (req, res, next) => {
+router.get("/respond", (req, res, next) => {
   let status = getStatus.get().current;
-  let contestantData = getContestantData.get({userid: req.params.id});
-  let responses = getResps.all({userid: req.params.id});
+  let contestantData = getContestantData.get({userid: req.id});
+  let responses = getResps.all({userid: req.id});
   res.status(200).render("respond.ejs", {
     'user': req.user,
     'subResps': contestantData.subResps,
@@ -95,38 +100,53 @@ router.get("/:id/respond", (req, res, next) => {
   });
 });
 
-router.get("/:id/vote", (req, res, next) => {
-  let voterData = getVoterData.get({userid: req.params.id});
-  let votes = getVotes.all({userid: req.params.id});
-  let contestantData = getContestantData.get({userid: req.params.id});
+router.get("/vote", (req, res, next) => {
+  let voterData = getVoterData.get({userid: req.id});
+  let votes = getVotes.all({userid: req.id});
+  let contestantData = getContestantData.get({userid: req.id});
   let screen;
   let gseed;
+  if (!voterData) {
+    addVoter.run({userid: userid});
+  }
+  if (!voterData.hasOwnProperty("voteCount")) {
+    editVoteCount.run({userid: userid, voteCount: 0});
+  }
   if (!votes) {
     mt.autoSeed();
     let seed = Random.integer(1, 11881376)(mt);
     mt.seed(seed);
-    if (!contestantData.hasOwnProperty("voteCount")) {
-      editVoteCount.run({userid: userid, voteCount: 0});
-    }
-    if (json.contestants.indexOf(req.params.id) != -1) {
-      if (json.voteCount[req.params.id] < json.actualRespCount[req.params.id]) {
-        gseed = `${seed}-${req.params.id}-${json.voteCount[req.params.id]+1}`;
+    voterData = getVoterData.get({userid: req.id});
+    if (contestantData) {
+      if (voterData.voteCount < contestantData.numResps) {
+        gseed = `${seed}-${req.id}-${voterData.voteCount+1}`;
       } else {
         gseed = `${seed}`;
       }
     } else {
       gseed = `${seed}`;
     }
-    if (req.query.hasOwnProperty("screenNum") && parseInt(req.query.screenNum) <= json.voteCount[req.params.id]) {
-      gseed = json.priorVoteScreens[req.params.id][parseInt(req.query.screenNum)-1];
+    if (req.query.hasOwnProperty("screenNum")) {
+      let rep = votes[parseInt(req.query.screenNum)-1].seed;
+      if (!rep) {
+        res.status(400).send("Invalid screen number");
+        return;
+      } else {
+        gseed = rep;
+      }
+    } else {
+      addVoteSeed.run({userid: userid, voteNum: voterData.voteCount+1, seed: gseed});
     }
-    json.currentVoteScreen[req.params.id] = gseed;
-    json.priorVoteScreens[req.params.id] = [];
-    fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
   } else {
-    gseed = json.currentVoteScreen[req.params.id];
-    if (req.query.hasOwnProperty("screenNum") && parseInt(req.query.screenNum) <= json.voteCount[req.params.id]) {
-      gseed = json.priorVoteScreens[req.params.id][parseInt(req.query.screenNum)-1];
+    gseed = votes[voterData.voteCount].seed;
+    if (req.query.hasOwnProperty("screenNum")) {
+      let rep = votes[parseInt(req.query.screenNum)-1].seed;
+      if (!rep) {
+        res.status(400).send("Invalid screen number");
+        return;
+      } else {
+        gseed = rep;
+      }
     }
   }
   screen = sgen(gseed, "anondata");
@@ -134,69 +154,68 @@ router.get("/:id/vote", (req, res, next) => {
     'user': req.user,
     'screen': screen,
     "seed": gseed,
-    "screenNum": req.query.screenNum || json.voteCount[req.params.id] + 1,
-    'priorScreens': json.priorVoteScreens[req.params.id],
-    'isVot': json.current == "voting",
+    "screenNum": req.query.screenNum || json.voteCount[req.id] + 1,
+    'priorScreens': getVoteSeeds.run({userid: req.id}),
+    'isVot': getStatus.get().current == "voting",
   });
 });
 
-router.post("/:id/signup", (req, res, next) => {
-  const json = req.mtjson;
-  if (json.current != "signups") {
+router.post("/signup", (req, res, next) => {
+  if (getStatus.get().current != "signups") {
     res.status(400);
     return;
   }
-  if (json.contestants.indexOf(req.params.id) == -1) {
-    req.client.guilds.get("439313069613514752").members.get(req.params.id).addRole("481831093964636161", "Signed up via website");
-    json.contestants.push(req.params.id);
-    json.respCount[req.params.id] = 1;
-    json.actualRespCount[req.params.id] = 0;
-    json.voteCount[req.params.id] = 0;
-    fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
+  let contestantData = getContestantData.get({userid: req.id});
+  if (!contestantData) {
+    req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481831093964636161", "Signed up via website");
+    addContestant.run({userid: req.id, subResps: 0, numResps: 1});
   }
   res.status(200).send("OK");
 });
 
-router.post("/:id/respond", (req, res, next) => {
-  let json = req.mtjson;
-  if (json.current != "responding") {
+router.post("/respond", (req, res, next) => {
+  if (getStatus.get().current != "responding") {
     res.status(400);
     return;
   }
-  for (var i = 1; i < json.respCount[req.params.id]+1; i++) {
-    if (req.body[`response${i}`]) {
-      let resp = json.responses.findIndex((obj) => {
-        return obj[0] == req.params.id && obj[1] == i;
+  let responses = getResps.get({userid: req.id});
+  let contestantData = getContestantData.get({userid: req.id})
+  if (!responses) {
+    res.status(400);
+    return;
+  }
+  for (var i = 1; i < contestantData.numResps+1; i++) {
+    if (req.body.hasOwnProperty(`response${i}`)) {
+      let resp = responses.findIndex((obj) => {
+        return obj.respNum == i;
       });
       if (resp != -1) {
-        json.responses[resp] = [req.params.id, i, req.body[`response${i}`], req.body[`response${i}`].split(/\s+/g).length];
+        editResponse.run({userid: req.id, respNum: i, response: req.body[`response${i}`], wc: req.body[`response${i}`].split(/\s+/g).length});
       } else {
-        json.responses.push([req.params.id, i, req.body[`response${i}`], req.body[`response${i}`].split(/\s+/g).length]);
-        json.actualRespCount[req.params.id]++;
+        addResponse.run({userid: req.id, respNum: i, response: req.body[`response${i}`], wc: req.body[`response${i}`].split(/\s+/g).length});
+        editSubResps.run({userid: req.id, subResps: contestantData.subResps + 1});
       }
     }
   }
-  fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
   res.status(200).send("OK");
 });
 
-router.post("/:id/vote", (req, res, next) => {
-  let json = req.mtjson;
+router.post("/vote", (req, res, next) => {
   let screen;
   let seed;
-  console.log("passed");
-  if (req.body.hasOwnProperty("screenNum") && req.body.screenNum != json.priorVoteScreens[req.params.id].length + 1) {
-    seed = json.priorVoteScreens[req.params.id][parseInt(req.body.screenNum) - 1];
-    screen = sgen(json.priorVoteScreens[req.params.id][parseInt(req.body.screenNum) - 1], "internal");
+  let votes = getVoteSeeds.all({userid: id});
+  let voterData = getVoterData({userid: id});
+  if (req.body.hasOwnProperty("screenNum") && parseInt(req.body.screenNum) != votes.length + 1) {
+    seed = votes[parseInt(req.body.screenNum) - 1];
   } else {
-    seed = json.currentVoteScreen[req.params.id];
-    screen = sgen(json.currentVoteScreen[req.params.id], "internal");
+    seed = votes[votes.length - 1];
   }
+  screen = sgen(seed, "internal");
   voteNum = parseInt(req.body.screenNum);
-  console.log("dp");
   console.log(seed);
   console.log(req.body);
   if (req.body.seed != seed) {
+    console.log("bad seed");
     res.status(400).send("Authentication details incorrect");
     return;
   }
@@ -209,60 +228,36 @@ router.post("/:id/vote", (req, res, next) => {
     } else if (used[req.body.vote.charCodeAt(i) - 65]) {
       res.status(400).send("A repeated character has been detected in your vote.");
       return;
-    } else {
-      used[req.body.vote.charCodeAt(i) - 65] = (screen.length - i - 1) / (screen.length - 1);
     }
   }
-  let cnt = 0;
-  for (let i = 0; i < used.length; i++) {
-    if (used[i] === false) {
-      cnt++;
-    }
-  }
-  for (let i = 0; i < used.length; i++) {
-    if (used[i] === false) {
-      used[i] = (cnt - 1) / 2 / (screen.length - 1);
-    }
-  }
-  let otp = [req.params.id, json.voteCount[req.params.id] + 1, []];
-  for (let i = 0; i < json.responses.length; i++) {
-    otp[2].push(-1);
-  }
-  for (let i = 0; i < used.length; i++) {
-    otp[2][screen[i]] = used[i];
-  }
-  console.log(otp);
-  if (seed == json.currentVoteScreen[req.params.id]) {
+  
+  if (seed == votes[votes.length - 1]) {
     console.log("a");
-    json.votes.push(otp);
-    json.voteCount[req.params.id]++;
-    json.priorVoteScreens[req.params.id].push(json.currentVoteScreen[req.params.id]);
+    editVote.run({userid: req.id, voteNum: votes.length, vote: req.body.vote});
+    editVoteCount.run({userid: req.id, voteCount: voterData.voteCount + 1});
+    let contestantData = getContestantData.get({userid: req.id});
+    voterData = getVoterData.get({userid: req.id});
     let gseed;
     mt.autoSeed();
     let seed = Random.integer(1, 11881376)(mt);
     mt.seed(seed);
-    if (json.contestants.indexOf(req.params.id) != -1) {
-      if (json.voteCount[req.params.id] < json.actualRespCount[req.params.id]) {
-        gseed = `${seed}-${req.params.id}-${json.voteCount[req.params.id]+1}`;
+    if (contestantData) {
+      if (voterData.voteCount < contestantData.subResps) {
+        gseed = `${seed}-${req.id}-${voterData.voteCount+1}`;
       } else {
         gseed = `${seed}`;
       }
     } else {
       gseed = `${seed}`;
     }
-    json.currentVoteScreen[req.params.id] = gseed;
+    json.currentVoteScreen[req.id] = gseed;
   } else {
-    console.log("b");
-    let ind = json.votes.findIndex((val) => {
-      return val[0] == req.params.id && val[1] == (req.body.screenNum || json.voteCount[req.params.id]+1);
-    });
-    json.votes[ind] = otp;
+    editVote.run({userid: req.id, voteNum: parseInt(req.body.screenNum), vote: req.body.vote});
   }
-  fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
   res.status(200).send("OK");
 });
 
-router.post('/:id/logout', (req, res, next) => {
+router.post('/logout', (req, res, next) => {
   res.clearCookie("login");
   res.clearCookie("s");
   res.redirect("http://localhost:50541");
