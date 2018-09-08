@@ -26,7 +26,7 @@ router.get('/login', (req, res) => {
         if (err) throw err;
       });
       res.cookie("s", info[a[0]]);
-      res.redirect(`/user/${a[0]}/home`);
+      res.redirect(`/user/home`);
     } else {
       res.status(400).send("400 Bad Request: Cookie Data Incorrect");
     }
@@ -41,6 +41,7 @@ router.get('/callback', catchAsync(async (req, res) => {
     if (err) throw err;
     info = JSON.parse(data);
   });
+  
   var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
   if (!req.query.code) {
     throw new Error('NoCodeProvided');
@@ -67,6 +68,12 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
+  if (info.hasOwnProperty(userJson.id)) {
+    res.cookie("s", tokens[userJson.id][3]);
+    res.cookie("login", `${userJson.id}-${tokens[userJson.id][3].toString('hex')}-${hex64.decode(tokens[userJson.id][0])}-${hex64.decode(tokens[userJson.id][1])}`);
+    res.redirect(`/user/home`);
+    return;
+  }
   const buf = crypto.randomBytes(64).toString('hex');
   var sha256 = crypto.createHash("SHA256");
   sha256.update(userJson.id + buf, "ascii");
@@ -79,12 +86,12 @@ router.get('/callback', catchAsync(async (req, res) => {
   if (req.query.cookie == "1") {
     res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`);
   }
-  tokens[userJson.id] = [json.access_token, json.refresh_token, hashed];
+  tokens[userJson.id] = [json.access_token, json.refresh_token, hashed, buf];
   fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
     if (err) throw err;
   });
   res.cookie("s", buf);
-  res.redirect(`/user/${userJson.id}/home`);
+  res.redirect(`/user/home`);
 }));
 
 module.exports = router;

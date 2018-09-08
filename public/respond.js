@@ -2,25 +2,37 @@
 var id;
 $(document).ready(function () {
   id = $("title").html();
-});
-
-$(document).on("input", ".entry", function (event) { 
-  event.preventDefault();
-  let numWords = $(this).val().trim().split(/\s+/g).length;
-  if ($(this).val().trim() == "") numWords = 0;
-  $(this).siblings().filter(".wc").html(`<h3 class="response wc">${numWords} word${(numWords == 1) ? "" : "s"}</h3>`);
-  if (numWords > 10 || numWords == 0) {
-    $(this).parent().parent().css("background-color", "#cc0000");
-  } else {
-    $(this).parent().parent().css("background-color", "green");
-  }
-});
-
-$(document).on("click", ".submit", (event) => {
-  $(".entry").each((ind, ele) => {
-    let body = {};
-    body[ele.name] = ele.value.trim();
-    $.post(`/user/${id}/respond`, body);
+  $(".entry").keypress(function (e) { 
+    if (event.which == 13) {
+      event.preventDefault();
+   }
   });
-  location.reload(true);
+
+  $(".entry").on("input", function (event) { 
+    event.preventDefault();
+    let numWords = $(this).val().trim().split(/\s+/g).length;
+    if ($(this).val().trim() == "") numWords = 0;
+    $(this).siblings().filter(".wc").html(`<h3 class="response wc">${numWords} word${(numWords == 1) ? "" : "s"}</h3>`);
+    if (numWords > 10 || numWords == 0) {
+      $(this).parent().parent().css("background-color", "#cc0000");
+    } else {
+      $(this).parent().parent().css("background-color", "green");
+    }
+  });
+  
+  $(".submit").click((event) => {
+    let body = {};
+    $(".entry").each((ind, ele) => {
+      if (ele.value.trim()) body[ele.name] = ele.value.trim();      
+    });
+    console.log(body);
+    $.post(`/user/respond`, body);
+    location.reload(true);
+  });
+
+  $(".signup").click((event) => {
+    $.post('/user/signup'); 
+    location.reload(true);
+  });
 });
+

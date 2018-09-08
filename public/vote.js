@@ -18,12 +18,12 @@ $(document).ready(() => {
   });
   $("#trigger").click((e) => {
     let vote = $("#votelets").val();
-    $.post(`/user/${id}/vote`, {
+    $.post(`/user/vote`, {
       screenNum: screenNum,
       vote: vote,
       seed: seed,
     });
-    window.location.href = `/user/${id}/vote`;
+    location.reload(true);
   });
 });
 

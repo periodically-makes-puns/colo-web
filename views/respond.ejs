@@ -28,8 +28,8 @@
             <div class="respcont" style="background-color: <%=(resp.wc > 10) ? '#cc0000' : 'green'%>;">
               <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
               <form class="response" style="padding-bottom: 4px">
-                <input class="response entry" type="text" name="response<%= i %>" value="<%= resp.response %>" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> maxlength="2000" <%= (!isRes) ? "readonly" : ""%> onkeypress="return event.keyCode != 13;" >
-                <div class="response wc"><h3 class="response wc"><%= resp.wc%> word<%= (resp.wc != 1) ? "s" : "" %></h3></div>
+                <input class="response entry" type="text" name="response<%= i %>" value="<%= resp.response %>" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> maxlength="2000" <%= (!isRes) ? "readonly" : ""%>>
+                <div class="response wc"><h3 class="response wc"><%= resp.words %> word<%= (resp.words != 1) ? "s" : "" %></h3></div>
                 <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>" >Submit!</button>
               </form>
             </div>
@@ -37,16 +37,17 @@
             <div class="respcont">
             <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
               <form class="response" style="padding-bottom: 4px">
-                <input class="response entry" type="text" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> name="response<%= i %>" <%= (!isRes) ? "readonly" : ""%> onkeypress="return event.keyCode != 13;" maxlength="2000">
+                <input class="response entry" type="text" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> name="response<%= i %>" <%= (!isRes) ? "readonly" : ""%> maxlength="2000">
                 <div class="response wc"><h3 class="response wc">0 words</h3></div>
                 <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>">Submit!</button>
               </form>
             </div>
           <% }
-        }} else {%>
+        }
+      } else {%>
           <div class="infobox">
             <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
-            <button onclick="$.post('/user/signup'); window.location.reload();" type="button" class="button">Sign up!</button>
+            <button class="signup" type="button" class="button">Sign up!</button>
           </div>  
         <% } %>
     </div>

@@ -34,19 +34,18 @@ const filter = (arr, func) => {
 };
 
 module.exports = (client, msg) => {
-  const log = client.channels.get("480897127262715924");
-  const json = JSON.parse(data);
+  args = msg.content.split(/[\^\s]+/g);
+  log = client.channels.get("480897127262715924");
   // args[0] is empty, args[1] has command, args[2]+ are arguments to the command
   switch (args[1]) {
     case "signup":
-      let contestantData = getContestantData.get({userid: msg.author.id});
+      contestantData = getContestantData.get({userid: msg.author.id});
       if (getStatus.get().current != "signups") {
         msg.channel.send("Sorry, but you can't sign up right now. Maybe later?")
         .then(msg => {sent = msg;})
         .catch(console.error);
         setTimeout(() => {
           sent.delete();
-          msg.delete();
         }, 10000);
       } else {
         if (contestantData) {
@@ -55,10 +54,9 @@ module.exports = (client, msg) => {
           .catch(console.error);
           setTimeout(() => {
             sent.delete();
-            msg.delete();
           }, 10000);
         } else {
-          addContestant({userid: msg.author.id, subResps: 0, numResps: 1});
+          addContestant.run({userid: msg.author.id, subResps: 0, numResps: 1});
           msg.channel.send("Signed up!")
           .then(msg => {sent = msg;})
           .catch(console.error);
@@ -70,15 +68,14 @@ module.exports = (client, msg) => {
       }
       break;
     case "respond":
-      let contestantData = getContestantData.get({userid: msg.author.id});
-      let responses = getResponses.all({userid: msg.author.id}) || [];
+      contestantData = getContestantData.get({userid: msg.author.id});
+      responses = getResps.all({userid: msg.author.id}) || [];
       if (getStatus.get().current != "responding") {
         msg.channel.send("Not time to respond yet.")
         .then(msg => {sent = msg;})
         .catch(console.error);
         setTimeout(() => {
           sent.delete();
-          msg.delete();
         }, 10000);
         break;
       }
@@ -107,31 +104,44 @@ module.exports = (client, msg) => {
         */
       }
       contestantData = getContestantData.get({userid: msg.author.id});
-      const respNum = parseInt(args[2]);
+      respNum = parseInt(args[2]);
       if (respNum > contestantData.numResps) {
         msg.channel.send("You don't have that many responses!")
         .then(msg => {sent = msg;})
         .catch(console.error);
         setTimeout(() => {
           sent.delete();
-          msg.delete();
         }, 10000);
         break;
       }
-      const response = args.slice(3);
-      const resp = responses.findIndex((val) => {
+      response = args.slice(3);
+      resp = responses.findIndex((val) => {
         return val.respNum == respNum;
       });
       if (resp == -1) {
         addResponse.run({userid: msg.author.id, respNum: respNum, response: response.join(" "), wc: response.length});
         editSubResps.run({userid: msg.author.id, subResps: contestantData.subResps + 1});
+        contestantData.subResps++;
       } else {
         editResponse.run({userid: msg.author.id, respNum: respNum, response: response.join(" "), wc: response.length});
       }
-      let inds = data.prepare("SELECT respNum FROM Responses WHERE userid = @userid").all({userid: msg.author.id}).forEach((val, ind, arr) => {
+      if (contestantData.subResps == contestantData.numResps) {
+        if (client.guilds.get("439313069613514752").members.get(msg.author.id).roles.has("481812129096138772")) {
+          client.guilds.get("439313069613514752").members.get(msg.author.id).removeRole("481812129096138772");
+        }
+        if (client.guilds.get("439313069613514752").members.get(msg.author.id).roles.has("481812076050907146")) {
+          client.guilds.get("439313069613514752").members.get(msg.author.id).removeRole("481812076050907146");
+        }
+      } else if (contestantData.subResps > 0) {
+        if (client.guilds.get("439313069613514752").members.get(msg.author.id).roles.has("481812076050907146")) {
+          client.guilds.get("439313069613514752").members.get(msg.author.id).removeRole("481812076050907146");
+        }
+      }
+      inds = data.prepare("SELECT respNum FROM Responses WHERE userid = @userid;").all({userid: msg.author.id})
+      inds.forEach((val, ind, arr) => {
         arr[ind] = val.respNum;
       });
-      msg.channel.send(`Your response has been recorded. This is response index ${respNum}. You have sent ${contestantData.numResps} of your ${contestantData.subResps + 1} responses. You have sent in responses with these indices: ${inds.join(", ")}.\n\nYour response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words`);
+      msg.channel.send(`Your response has been recorded. This is response index ${respNum}. You have sent ${contestantData.subResps} of your ${contestantData.numResps} responses. You have sent in responses with these indices: ${inds.join(", ")}.\n\nYour response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words`);
       break;
     case "vote":
       if (getStatus.get().current != "voting") {
@@ -143,16 +153,20 @@ module.exports = (client, msg) => {
         }, 10000);
         break;
       }
-      let screen;
-      let voterData = getVoterData.get({userid: msg.author.id});
-      let contestantData = getContestantData.get({userid: msg.author.id});
-      let seeds = getVoteSeeds.all({userid: msg.author.id});
+      var screen;
+      voterData = getVoterData.get({userid: msg.author.id});
+      contestantData = getContestantData.get({userid: msg.author.id});
+      seeds = getVoteSeeds.all({userid: msg.author.id});
+      if (!voterData) {
+        addVoter.run({userid: msg.author.id});
+      }
+      voterData = getVoterData.get({userid: msg.author.id});
       if (!seeds) {
-        let gseed;
+        var gseed;
         mt.autoSeed();
-        let seed = Random.integer(1, 11881376)(mt);
+        seed = Random.integer(1, 11881376)(mt);
         mt.seed(seed);
-        if (!voterData) addVoter.run({userid: msg.author.id, voteCount: 0}); 
+        if (!voterData) addVoter.run({userid: msg.author.id}); 
         if (contestantData) {
           voterData = getVoterData.get({userid: msg.author.id});
           if (voterData.voteCount < contestatntData.subResps) {
@@ -168,7 +182,6 @@ module.exports = (client, msg) => {
           screen = sgen(gseed, "text");
         }
         addVoteSeed.run({userid: msg.author.id, voteNum: voterData.voteCount+1, seed: gseed});
-        fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
         msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
       } else {
         if (args[3]) {
@@ -182,8 +195,8 @@ module.exports = (client, msg) => {
           msg.channel.send(`Just to clarify, this is the screen you're voting on:\n\n${sgen(seeds[voteNum], "text")}`);
           return;
         }
-        let used = [false, false, false, false, false, false, false, false, false, false];
-        for (let i = 0; i < args[2].length; i++) {
+        used = [false, false, false, false, false, false, false, false, false, false];
+        for (i = 0; i < args[2].length; i++) {
           if ((args[2].charCodeAt(i) - 65 < 0) || (args[2].charCodeAt(i) - 65 > screen.length)) {
             msg.channel.send("An invalid character has been detected in your vote.");
             return;
@@ -193,12 +206,13 @@ module.exports = (client, msg) => {
           }
         }
         editVote.run({userid: msg.author.id, voteNum: voteNum, vote: args[2]});
+        msg.channel.send(`Your vote of ${args[2]} on screen number ${voteNum} has been recognised.`);
         if (voteNum == voterData.voteCount + 1) {
           editVoteCount.run({userid: msg.author.id, voteCount: voterData.voteCount + 1});
-          let gseed;
+          gseed;
           if (contestantData) {
             mt.autoSeed();
-            let seed = Random.integer(1, 11881376)(mt);
+            seed = Random.integer(1, 11881376)(mt);
             mt.seed(seed);
             if (voterData.voteCount + 1 < contestantData.subResps) {
               gseed = `${seed}-${msg.author.id}-${voterData.voteCount + 2}`;
@@ -209,9 +223,8 @@ module.exports = (client, msg) => {
             gseed = `${seed}`;
           }
           screen = sgen(gseed, "text");
-          msg.channel.send(`Just to clarify, this was your previous screen:\n\n${sgen(seeds[seeds.length - 1], "text")}`);
-          addVoteSeed({userid: msg.author.id, voteNum: voterData.voteCount + 2, seed: gseed});
-          msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
+          addVoteSeed.run({userid: msg.author.id, voteNum: voterData.voteCount + 2, seed: gseed});
+          msg.channel.send(`This is screen number ${voterData.voteCount+1}.\n\n${screen}\n\n`);
         }
       }
   }

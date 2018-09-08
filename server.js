@@ -1,7 +1,8 @@
 /*jshint esversion: 6*/
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
-/*
+
+
 data.prepare("DROP TABLE IF EXISTS Status;").run();
 data.prepare("DROP TABLE IF EXISTS Contestants;").run();
 data.prepare("DROP TABLE IF EXISTS Voters;").run();
@@ -14,7 +15,7 @@ data.prepare("CREATE TABLE IF NOT EXISTS Voters (userid text primary key, voteCo
 data.prepare("CREATE TABLE IF NOT EXISTS Responses (id integer primary key, userid text, respNum integer, response text, words integer);").run();
 data.prepare("CREATE TABLE IF NOT EXISTS Votes (id integer primary key, userid text, voteNum integer, seed text, vote text);").run();
 console.log("Done.");
-*/
+
 
 const fs = require("fs");
 const sgit = require("simple-git")();
@@ -47,36 +48,42 @@ const restart = require('proc-restart');
 
 client.on("message", (msg) => { // on every message that gets sent
   // run this stuff
+  console.log(`${msg.author.username} sent a message. The content was \n${msg.content}\n`);
   const args = msg.content.split(/[\^& ]+/g);
   if (msg.author.bot) {return;} // breaks if sender is bot
   //msg.channel.send(msg.content); // echoes content
   if (admins.indexOf(msg.author.id) != -1 && msg.content.startsWith("&")) {
     switch (args[1]) {
       case "fetch":
+        console.log(`${msg.author.username} ran a GIT FETCH command. ⚠ This requires admin permissions. ⚠`);
         if (args[2] == "") args[2] = "master";
         msg.channel.send("Fetching from branch " + args[2]);
         sgit.fetch("origin", args[2]);
         msg.channel.send("Fetched.");
         break;
       case "pull":
+        console.log(`${msg.author.username} ran a GIT PULL command. ⚠ This requires admin permissions. ⚠`);
         if (args[2] == "") args[2] = "master";
         msg.channel.send("Pulling from branch " + args[2]);
         sgit.pull("origin", args[2]);
         msg.channel.send("Pulled.");
         break;
       case "restart":
+        console.log(`${msg.author.username} ran a RESTART command. ⚠ This requires admin permissions. ⚠`);
         msg.channel.send("Gotta go spiff up my code...");
         setTimeout(() => {
           restart();
         }, 500);
         break;
       case "kill":
+      console.log(`${msg.author.username} ran a KILL command. ⚠ This requires admin permissions. ⚠`);
         msg.channel.send("Nighty night.");
         setTimeout(() => {
           throw Error("Goodbye!");
         }, 500);
         break;
       case "stash":
+        console.log(`${msg.author.username} ran a STASH command. ⚠ This requires admin permissions. ⚠`);
         msg.channel.send("Stashing...");
         sgit.stash();
         msg.channel.send("Stashed.");
@@ -85,6 +92,7 @@ client.on("message", (msg) => { // on every message that gets sent
         msg.channel.send("That isn't a valid function.");
     }
   } else if (msg.content.startsWith("m&")) {
+    console.log(`${msg.author.username} ran a MINITWOW ADMINISTRATOR type command. ⚠ This requires admin permissions. ⚠`);
     madmin(client, msg);
   } else if (msg.content.startsWith("&")) {
     msg.channel.send("You can't do that!");
@@ -93,6 +101,7 @@ client.on("message", (msg) => { // on every message that gets sent
       msg.channel.send("Yeah, I totally agree as well.");
     }
   } else if (msg.content.startsWith("m^")) {
+    console.log(`${msg.author.username} ran a MINITWOW NORMAL type command.`);
     mtwow(client, msg);
   }
 });
@@ -105,7 +114,7 @@ const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
 // middleware
-app.use(bodyParser.urlencoded({ extended: true}));
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 app.use(morgan('common', {stream: accessLogStream}));
 app.use(helmet());

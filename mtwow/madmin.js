@@ -34,8 +34,8 @@ module.exports = async (client, msg) => {
       break;
     case "startresp":
       changeStatus.run({status: "responding"});
-      let contestants = getAllContestants.all();
-      for (let i = 0; i < contestants.length; i++) {
+      contestants = getAllContestants.all();
+      for (i = 0; i < contestants.length; i++) {
         try {
           await client.guilds.get("439313069613514752").members.get(contestants[i].userid).addRoles(["481812076050907146", "481812129096138772"], `Contestant ${i+1} of ${contestants.length}`);
           client.channels.get("480897127262715924").send(`Gave contestant ${client.users.get(contestants[i].userid).username} roles ${client.guilds.get("439313069613514752").roles.get("481812076050907146").name}, ${client.guilds.get("439313069613514752").roles.get("481812129096138772").name}`);
@@ -44,30 +44,37 @@ module.exports = async (client, msg) => {
           client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Contestant with ID ${contestants[i].userid} was not found! <@248953835899322370> ⚠`);
         }
       }
-      json.prompt = msg.content.split("``")[1];
+      changePrompt.run({prompt: msg.content.split("``")[1]});
       break;
     case "startvote": 
       changeStatus.run({status: "voting"});
-      let contestants = getAllContestants.all();
-      for (let i = 0; i < contestants.length; i++) {
+      contestants = getAllContestants.all();
+      for (i = 0; i < contestants.length; i++) {
         try {
-          const id = contestants[i].userid;
-          const contestant = client.guilds.get("439313069613514752").members.get(id);
-          if (contestant.roles.has("481812076050907146")) {
-            client.channels.get("480897127262715924").send(`Contestant ${contestant.name} has DNPed. Revoking roles now.`);
+          id = contestants[i].userid;
+          contestant = client.guilds.get("439313069613514752").members.get(id);
+          if (contestants[i].subResps == 0) {
+            client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} has DNPed. Revoking roles now.`);
             await contestant.removeRoles(["481812076050907146", "481812129096138772", "481831093964636161"]);
             await contestant.addRole("481831151674327042");
             killContestant.run({userid: id});
-          } else if (contestant.roles.has("481812129096138772")) {
-            client.channels.get("480897127262715924").send(`Contestant ${contestant.name} lost some responses. Revoking roles now.`);
+          } else if (contestants[i].subResps < contestants[i].numResps) {
+            client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} lost some responses. Revoking roles now.`);
             await contestant.removeRole("481812129096138772");
           } else {
-            client.channels.get("480897127262715924").send(`Contestant ${contestant.name} fully responded.`);
+            client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} fully responded.`);
           }
         } catch (e) {
+          console.error(e);
           client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Something went wrong when updating contestant with ID ${contestants[i].userid}! <@248953835899322370> ⚠`);
         }
       }
-    }
-  fs.writeFileSync("./mtwow/mtwow.json", JSON.stringify(json));
+      break;
+    case "giveResponses":
+      id = args[2];
+      respNums = parseInt(args[3]);
+      editNumResps.run({userid: id, numResps: respNums});
+      client.channels.get("480897127262715924").send(`Gave user with ID ${id} ${respNums} response${(respNums != 1) ? "s" : ""}`);
+      break;
+  }
 }

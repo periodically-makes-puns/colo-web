@@ -15,37 +15,44 @@
       <li class="navlink right"><a id="logout" href="/logout">Logout</a></li>
       <li class="navlink right"><p><%= user.username %></p></li>
     </ul>
+    <% if (isVot) { %>
     <div class="content">
       <h1>Welcome, <%= user.username %>.</h1>
       <h1>Screen #<%= screenNum %>, ID <%= seed %></h1>
     </div>
-    <div class="votescreen">
-      <ul id="currscreen">
-        <% for(let i = 0; i < screen.length; i++) {%>
-          <li class="resp">
-            <div class="respcont <%= (screen[i][1] > 10) ? 'invalid' : 'valid'%>">
-              <div class="vl"><h3 class="vl"><%= String.fromCharCode(i+65)%></h3></div>
-              <input class="response" type="text" value="<%= screen[i][0] %>" disabled></input>
-              <div class="wc"><h3 class="wc"><%= screen[i][1]%></h3></div>
-            </div>
-          </li>
-        <%}%>
-      </ul>
-    </div>
-    <div style="margin: 0 auto; width: 880px; height: 30px;">
-      <input type="text" style="width: 880px; height: 30px; font-size: 18px; text-align: center;" value="ABCDEFGHIJ" id="votelets" disabled></input>
-      <button id="trigger" type="button" style="width: 884px; height: 30px;">Submit!</button>
-    </div>
-    <table style="margin: 40px auto;">
-      <tr>
-        <th><button type="button" href="/user/vote">Current Screen</button></th>
-      </tr>
-      <% for (let i = priorScreens.length - 1; i >= 0; i--) {%>
+      <div class="votescreen">
+        <ul id="currscreen">
+          <% for(let i = 0; i < screen.length; i++) {%>
+            <li class="resp">
+              <div class="respcont <%= (screen[i][1] > 10) ? 'invalid' : 'valid'%>">
+                <div class="vl"><h3 class="vl"><%= String.fromCharCode(i+65)%></h3></div>
+                <input class="response" type="text" value="<%= screen[i][0] %>" disabled></input>
+                <div class="wc"><h3 class="wc"><%= screen[i][1]%></h3></div>
+              </div>
+            </li>
+          <%}%>
+        </ul>
+      </div>
+      <div style="margin: 0 auto; width: 880px; height: 30px;">
+        <input type="text" style="width: 880px; height: 30px; font-size: 18px; text-align: center;" value="ABCDEFGHIJ" id="votelets" disabled></input>
+        <button id="trigger" type="button" style="width: 884px; height: 30px;">Submit!</button>
+      </div>
+      <table style="margin: 40px auto;">
         <tr>
-          <th><button type="button" href="/user/vote?screenNum=<%=encodeURIComponent(i+1)%>">Screen <%= i+1 %></button></th>
+          <th><button type="button" href="/user/vote">Current Screen</button></th>
         </tr>
-      <%}%>
-    </table>
+        <% for (let i = priorScreens.length - 1; i >= 0; i--) {%>
+          <tr>
+            <th><button type="button" href="/user/vote?screenNum=<%=encodeURIComponent(i+1)%>">Screen <%= i+1 %></button></th>
+          </tr>
+        <%}%>
+      </table>
+    <% } else { %>
+    <div class="content">
+      <h1>Welcome, <%= user.username %>.</h1>
+      <h1>It's not voting time yet.</h1>
+    </div>
+    <% } %>
   </body>
   <script src="/jquery-3.3.1.js"></script>
   <script src="/jquery-ui.js"></script>

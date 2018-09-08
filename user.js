@@ -14,6 +14,7 @@ var csrf = new SQLite("./csrf.sqlite");
 
 var getStatus = data.prepare("SELECT current FROM Status;");
 var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid ORDER BY respNum;");
+var getSpecificResp = data.prepare("SELECT * FROM Responses WHERE userid = @userid AND respNum = @respNum;");
 var getContestantData = data.prepare("SELECT * FROM Contestants WHERE userid = @userid;");
 var getVoterData = data.prepare("SELECT * FROM Voters WHERE userid = @userid;");
 var getVotes = data.prepare("SELECT * FROM Votes WHERE userid = @userid ORDER BY voteNum;");
@@ -46,18 +47,19 @@ router.use("/", (req, res, next) => {
   const data = fs.readFileSync("./access.json");
   const json = JSON.parse(data);
   var sha256 = crypto.createHash("SHA256");
+  if (!req.cookies.login) {
+    res.status(403).send("Authentication details incorrect");
+    return;
+  }
   sha256.update(req.cookies.login.split("-")[0] + req.cookies.s, "ascii");
   req.id = req.cookies.login.split("-")[0];
   try {
     let a = sha256.digest("hex");
-    console.log(a);
     if (a != json[req.id][2]) {
-      console.log("bad auth");
       res.status(403).send("Authentication details incorrect");
       return;
     }
   } catch (e) {
-    console.log("nonexistent auth");
     res.status(403).send("Authentication details incorrect");
     return;
   }
@@ -74,7 +76,7 @@ router.use("/", (req, res, next) => {
 
 router.get("/home", (req, res, next) => {
   let contestantData = getContestantData.get({userid: req.id}) || {subResps: 0, numResps: 0};
-  let voterData = getVoterData.get({userid: req.id}) || null;
+  let voterData = getVoterData.get({userid: req.id}) || {voteCount: undefined};
   let overWC = getRespsOverWC.all({userid: req.id});
   res.status(200).render("home.ejs", {
     'user': req.user,
@@ -89,7 +91,7 @@ router.get("/home", (req, res, next) => {
 
 router.get("/respond", (req, res, next) => {
   let status = getStatus.get().current;
-  let contestantData = getContestantData.get({userid: req.id});
+  let contestantData = getContestantData.get({userid: req.id})  || {subResps: 0, numResps: 0};
   let responses = getResps.all({userid: req.id});
   res.status(200).render("respond.ejs", {
     'user': req.user,
@@ -107,12 +109,13 @@ router.get("/vote", (req, res, next) => {
   let screen;
   let gseed;
   if (!voterData) {
-    addVoter.run({userid: userid});
+    addVoter.run({userid: req.id});
   }
+  voterData = getVoterData.get({userid: req.id});
   if (!voterData.hasOwnProperty("voteCount")) {
-    editVoteCount.run({userid: userid, voteCount: 0});
+    editVoteCount.run({userid: req.id, voteCount: 0});
   }
-  if (!votes) {
+  if (votes == false) {
     mt.autoSeed();
     let seed = Random.integer(1, 11881376)(mt);
     mt.seed(seed);
@@ -127,25 +130,25 @@ router.get("/vote", (req, res, next) => {
       gseed = `${seed}`;
     }
     if (req.query.hasOwnProperty("screenNum")) {
-      let rep = votes[parseInt(req.query.screenNum)-1].seed;
-      if (!rep) {
+      let rep = votes[parseInt(req.query.screenNum)-1];
+      if (!rep || !rep.seed) {
         res.status(400).send("Invalid screen number");
         return;
       } else {
-        gseed = rep;
+        gseed = rep.seed;
       }
     } else {
-      addVoteSeed.run({userid: userid, voteNum: voterData.voteCount+1, seed: gseed});
+      addVoteSeed.run({userid: req.id, voteNum: voterData.voteCount+1, seed: gseed});
     }
   } else {
     gseed = votes[voterData.voteCount].seed;
     if (req.query.hasOwnProperty("screenNum")) {
-      let rep = votes[parseInt(req.query.screenNum)-1].seed;
+      let rep = votes[parseInt(req.query.screenNum)-1];
       if (!rep) {
         res.status(400).send("Invalid screen number");
         return;
       } else {
-        gseed = rep;
+        gseed = rep.seed;
       }
     }
   }
@@ -154,14 +157,14 @@ router.get("/vote", (req, res, next) => {
     'user': req.user,
     'screen': screen,
     "seed": gseed,
-    "screenNum": req.query.screenNum || json.voteCount[req.id] + 1,
-    'priorScreens': getVoteSeeds.run({userid: req.id}),
+    "screenNum": req.query.screenNum || voterData.voteCount + 1,
+    'priorScreens': getVoteSeeds.all({userid: req.id}),
     'isVot': getStatus.get().current == "voting",
   });
 });
 
 router.post("/signup", (req, res, next) => {
-  if (getStatus.get().current != "signups") {
+  if (getStatus.get().current != "signups" && getStatus.get().current != "responding") {
     res.status(400);
     return;
   }
@@ -178,22 +181,32 @@ router.post("/respond", (req, res, next) => {
     res.status(400);
     return;
   }
-  let responses = getResps.get({userid: req.id});
-  let contestantData = getContestantData.get({userid: req.id})
-  if (!responses) {
+  let contestantData = getContestantData.get({userid: req.id});
+  if (!contestantData) {
     res.status(400);
     return;
   }
   for (var i = 1; i < contestantData.numResps+1; i++) {
     if (req.body.hasOwnProperty(`response${i}`)) {
-      let resp = responses.findIndex((obj) => {
-        return obj.respNum == i;
-      });
-      if (resp != -1) {
+      let resp = getSpecificResp.get({userid: req.id, respNum: i});
+      if (resp) {
         editResponse.run({userid: req.id, respNum: i, response: req.body[`response${i}`], wc: req.body[`response${i}`].split(/\s+/g).length});
       } else {
         addResponse.run({userid: req.id, respNum: i, response: req.body[`response${i}`], wc: req.body[`response${i}`].split(/\s+/g).length});
         editSubResps.run({userid: req.id, subResps: contestantData.subResps + 1});
+      }
+    }
+    contestantData = getContestantData.get({userid: req.id});
+    if (contestantData.subResps == contestantData.numResps) {
+      if (req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812129096138772")) {
+        req.client.guilds.get("439313069613514752").members.get(req.id).removeRole("481812129096138772");
+      }
+      if (req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812076050907146")) {
+        req.client.guilds.get("439313069613514752").members.get(req.id).removeRole("481812076050907146");
+      }
+    } else if (contestantData.subResps > 0) {
+      if (req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812076050907146")) {
+        req.client.guilds.get("439313069613514752").members.get(req.id).removeRole("481812076050907146");
       }
     }
   }
@@ -203,24 +216,20 @@ router.post("/respond", (req, res, next) => {
 router.post("/vote", (req, res, next) => {
   let screen;
   let seed;
-  let votes = getVoteSeeds.all({userid: id});
-  let voterData = getVoterData({userid: id});
+  let votes = getVoteSeeds.all({userid: req.id});
+  let voterData = getVoterData.get({userid: req.id});
   if (req.body.hasOwnProperty("screenNum") && parseInt(req.body.screenNum) != votes.length + 1) {
-    seed = votes[parseInt(req.body.screenNum) - 1];
+    seed = votes[parseInt(req.body.screenNum) - 1].seed;
   } else {
-    seed = votes[votes.length - 1];
+    seed = votes[votes.length - 1].seed;
   }
   screen = sgen(seed, "internal");
   voteNum = parseInt(req.body.screenNum);
-  console.log(seed);
-  console.log(req.body);
   if (req.body.seed != seed) {
-    console.log("bad seed");
     res.status(400).send("Authentication details incorrect");
     return;
   }
   let used = [false, false, false, false, false, false, false, false, false, false];
-  console.log(req.body.vote);
   for (let i = 0; i < req.body.vote.length; i++) {
     if ((req.body.vote.charCodeAt(i) - 65 < 0) || (req.body.vote.charCodeAt(i) - 65 > screen.length)) {
       res.status(400).send("An invalid character has been detected in your vote.");
@@ -230,9 +239,7 @@ router.post("/vote", (req, res, next) => {
       return;
     }
   }
-  
-  if (seed == votes[votes.length - 1]) {
-    console.log("a");
+  if (seed == votes[votes.length - 1].seed) {
     editVote.run({userid: req.id, voteNum: votes.length, vote: req.body.vote});
     editVoteCount.run({userid: req.id, voteCount: voterData.voteCount + 1});
     let contestantData = getContestantData.get({userid: req.id});
@@ -250,7 +257,7 @@ router.post("/vote", (req, res, next) => {
     } else {
       gseed = `${seed}`;
     }
-    json.currentVoteScreen[req.id] = gseed;
+    addVoteSeed.run({userid: req.id, voteNum: voterData.voteCount + 1, seed: gseed});
   } else {
     editVote.run({userid: req.id, voteNum: parseInt(req.body.screenNum), vote: req.body.vote});
   }
@@ -260,7 +267,7 @@ router.post("/vote", (req, res, next) => {
 router.post('/logout', (req, res, next) => {
   res.clearCookie("login");
   res.clearCookie("s");
-  res.redirect("http://localhost:50541");
+  res.redirect("https://pmpuns.com");
 });
 
 module.exports = router;

@@ -49,7 +49,7 @@
         <%}
         break;
       case "voting":
-        if (!numVotes) {%>
+        if (numVotes === null) {%>
           <h2 style="color: red;">You haven't requested a voting screen yet!</h2>
           <button id="vote" type="button" class="button">Vote!</button>
         <%} else if (numVotes == 0) {%>
