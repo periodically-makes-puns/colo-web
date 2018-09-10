@@ -3,12 +3,16 @@
 $(document).ready(() => {
   $("#signup").click(() => {
     $.post('/user/signup'); 
-    location.reload();
+    location.reload(true);
   });
   $("#respond").click(() => {
-    location.href='./respond';
+    location.href='/user/respond';
   });
   $("#vote").click(() => {
-    window.location.href='./vote';
+    location.href='/user/vote';
   });
+  $("#logout").click(() => {
+    e.preventDefault();
+    $.post("/user/logout");
+  })
 });

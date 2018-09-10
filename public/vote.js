@@ -2,10 +2,12 @@
 let id;
 let screenNum;
 let seed;
+let ns;
 $(document).ready(() => {
   id = $("body").data("id");
   screenNum = $("body").data("num");
   seed = $("body").data("seed");
+  ns = $("body").data("ns");
   $("#currscreen").sortable({
     stop: (e) => {
       let otp = "";
@@ -25,5 +27,17 @@ $(document).ready(() => {
     });
     location.reload(true);
   });
+  $(".curr").click((e) => {
+    location.href =  "/user/vote";
+  })
+  $(".prev").each(function (ind, ele) {
+    $(this).click((e) => {
+      location.href = `/user/vote?screenNum=${encodeURIComponent(ns - ind)}`;
+    });
+  });
+  $("#logout").click((e) => {
+    e.preventDefault();
+    $.post("/user/logout");
+  })
 });
 

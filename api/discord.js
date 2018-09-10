@@ -28,6 +28,8 @@ router.get('/login', (req, res) => {
       res.cookie("s", info[a[0]]);
       res.redirect(`/user/home`);
     } else {
+      res.clearCookie("s");
+      res.clearCookie("login");
       res.status(400).send("400 Bad Request: Cookie Data Incorrect");
     }
   } else {
@@ -68,12 +70,6 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
-  if (info.hasOwnProperty(userJson.id)) {
-    res.cookie("s", tokens[userJson.id][3]);
-    res.cookie("login", `${userJson.id}-${tokens[userJson.id][3].toString('hex')}-${hex64.decode(tokens[userJson.id][0])}-${hex64.decode(tokens[userJson.id][1])}`);
-    res.redirect(`/user/home`);
-    return;
-  }
   const buf = crypto.randomBytes(64).toString('hex');
   var sha256 = crypto.createHash("SHA256");
   sha256.update(userJson.id + buf, "ascii");

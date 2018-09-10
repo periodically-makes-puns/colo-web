@@ -18,6 +18,7 @@ var getSpecificResp = data.prepare("SELECT * FROM Responses WHERE userid = @user
 var getContestantData = data.prepare("SELECT * FROM Contestants WHERE userid = @userid;");
 var getVoterData = data.prepare("SELECT * FROM Voters WHERE userid = @userid;");
 var getVotes = data.prepare("SELECT * FROM Votes WHERE userid = @userid ORDER BY voteNum;");
+var getSpecificVote = data.prepare("SELECT * FROM Votes WHERE userid = @userid AND voteNum = @voteNum;");
 var getVoteSeeds = data.prepare("SELECT seed FROM Votes WHERE userid = @userid ORDER BY voteNum;");
 var getRespsOverWC = data.prepare("SELECT * FROM Responses WHERE userid = @userid AND words > 10;");
 var addResponse = data.prepare("INSERT INTO Responses (userid, respNum, response, words) VALUES (@userid, @respNum, @response, @wc);");
@@ -51,21 +52,36 @@ router.use("/", (req, res, next) => {
     res.status(403).send("Authentication details incorrect");
     return;
   }
-  sha256.update(req.cookies.login.split("-")[0] + req.cookies.s, "ascii");
   req.id = req.cookies.login.split("-")[0];
+  sha256.update(req.id + req.cookies.s, "ascii");
   try {
     let a = sha256.digest("hex");
     if (a != json[req.id][2]) {
+      res.clearCookie("login");
+      res.clearCookie("s");
       res.status(403).send("Authentication details incorrect");
       return;
     }
   } catch (e) {
+    res.clearCookie("login");
+    res.clearCookie("s");
     res.status(403).send("Authentication details incorrect");
     return;
   }
-  req.user = req.client.users.get(req.cookies.login.split("-")[0]);
-  
+  req.user = req.client.users.get(req.id);
   if (!req.user) {
+    res.clearCookie("login");
+    res.clearCookie("s");
+    fs.readFile("./access.json", "utf-8", (err, data) => {
+      tokens = JSON.parse(data);
+      delete tokens[req.id];
+      fs.writeFile("./access.json", JSON.stringify(tokens), console.error);
+    });
+    fs.readFile("./api/config.json", "utf-8", (err, data) => {
+      a = JSON.parse(data);
+      delete a[req.id];
+      fs.writeFile("./api/config.json", JSON.stringify(a), console.error);
+    });
     res.status(404).send("Not Found (psst you need to be on the server :D");
     return;
   } else {
@@ -115,11 +131,13 @@ router.get("/vote", (req, res, next) => {
   if (!voterData.hasOwnProperty("voteCount")) {
     editVoteCount.run({userid: req.id, voteCount: 0});
   }
+  voterData = getVoterData.get({userid: req.id});
+  let screenNum = voterData.voteCount+1;
   if (votes == false) {
     mt.autoSeed();
     let seed = Random.integer(1, 11881376)(mt);
     mt.seed(seed);
-    voterData = getVoterData.get({userid: req.id});
+    
     if (contestantData) {
       if (voterData.voteCount < contestantData.numResps) {
         gseed = `${seed}-${req.id}-${voterData.voteCount+1}`;
@@ -129,6 +147,7 @@ router.get("/vote", (req, res, next) => {
     } else {
       gseed = `${seed}`;
     }
+    
     if (req.query.hasOwnProperty("screenNum")) {
       let rep = votes[parseInt(req.query.screenNum)-1];
       if (!rep || !rep.seed) {
@@ -136,6 +155,7 @@ router.get("/vote", (req, res, next) => {
         return;
       } else {
         gseed = rep.seed;
+        screenNum = parseInt(req.query.screenNum);
       }
     } else {
       addVoteSeed.run({userid: req.id, voteNum: voterData.voteCount+1, seed: gseed});
@@ -149,15 +169,19 @@ router.get("/vote", (req, res, next) => {
         return;
       } else {
         gseed = rep.seed;
+        screenNum = parseInt(req.query.screenNum);
       }
     }
   }
   screen = sgen(gseed, "anondata");
+  let vote = getSpecificVote.get({userid: req.id, voteNum: screenNum});
+  
   res.status(200).render("vote.ejs", {
     'user': req.user,
     'screen': screen,
     "seed": gseed,
-    "screenNum": req.query.screenNum || voterData.voteCount + 1,
+    "vote": vote.vote,
+    "screenNum": screenNum,
     'priorScreens': getVoteSeeds.all({userid: req.id}),
     'isVot': getStatus.get().current == "voting",
   });
@@ -171,6 +195,12 @@ router.post("/signup", (req, res, next) => {
   let contestantData = getContestantData.get({userid: req.id});
   if (!contestantData) {
     req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481831093964636161", "Signed up via website");
+    if (!req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812129096138772")) {
+      req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481812129096138772");
+    }
+    if (!req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812076050907146")) {
+      req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481812076050907146");
+    }
     addContestant.run({userid: req.id, subResps: 0, numResps: 1});
   }
   res.status(200).send("OK");
@@ -265,9 +295,19 @@ router.post("/vote", (req, res, next) => {
 });
 
 router.post('/logout', (req, res, next) => {
+  fs.readFile("./access.json", "utf-8", (err, data) => {
+    tokens = JSON.parse(data);
+    delete tokens[req.id];
+    fs.writeFile("./access.json", JSON.stringify(tokens), console.error);
+  });
+  fs.readFile("./api/config.json", "utf-8", (err, data) => {
+    a = JSON.parse(data);
+    delete a[req.id];
+    fs.writeFile("./api/config.json", JSON.stringify(a), console.error);
+  });
   res.clearCookie("login");
   res.clearCookie("s");
-  res.redirect("https://pmpuns.com");
+  res.redirect("https://www.pmpuns.com");
 });
 
 module.exports = router;

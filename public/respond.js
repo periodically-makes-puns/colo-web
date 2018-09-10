@@ -2,7 +2,7 @@
 var id;
 $(document).ready(function () {
   id = $("title").html();
-  $(".entry").keypress(function (e) { 
+  $(".entry").keypress(function (event) { 
     if (event.which == 13) {
       event.preventDefault();
    }
@@ -19,20 +19,31 @@ $(document).ready(function () {
       $(this).parent().parent().css("background-color", "green");
     }
   });
+
+  $("form.response").submit((event) => {
+    event.preventDefault();
+  });
   
   $(".submit").click((event) => {
+    event.preventDefault();
     let body = {};
     $(".entry").each((ind, ele) => {
       if (ele.value.trim()) body[ele.name] = ele.value.trim();      
     });
-    console.log(body);
     $.post(`/user/respond`, body);
     location.reload(true);
   });
 
   $(".signup").click((event) => {
+    event.preventDefault();
     $.post('/user/signup'); 
     location.reload(true);
   });
+
+  $("#logout").click((event) => {
+    e.preventDefault();
+    $.post("/user/logout");
+    location = "/";
+  })
 });
 

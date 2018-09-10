@@ -6,11 +6,16 @@ var mt = Random.engines.mt19937();
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 
+var getStatus = data.prepare("SELECT current FROM Status;");
+
 var getAnonSpecificResp = data.prepare("SELECT id, response, words FROM Responses WHERE userid = @userid AND respNum = @respNum;");
 var getAnonAllResps = data.prepare("SELECT id, response, words FROM Responses ORDER BY id;");
 var getAnonAllRespsButOne = data.prepare("SELECT id, response, words FROM Responses WHERE userid != @userid OR respNum != @respNum ORDER BY id;");
 
 module.exports = (seed, type) => {
+  if (getStatus.get().current != "voting") {
+    return;
+  }
   let seedargs;
   try {
     seedargs = seed.split("-");

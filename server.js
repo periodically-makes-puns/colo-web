@@ -2,7 +2,11 @@
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 
+data.prepare("DROP TABLE IF EXISTS Votes;").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Votes (id integer primary key, userid text, voteNum integer, seed text, vote text);").run();
 
+
+/*
 data.prepare("DROP TABLE IF EXISTS Status;").run();
 data.prepare("DROP TABLE IF EXISTS Contestants;").run();
 data.prepare("DROP TABLE IF EXISTS Voters;").run();
@@ -15,7 +19,7 @@ data.prepare("CREATE TABLE IF NOT EXISTS Voters (userid text primary key, voteCo
 data.prepare("CREATE TABLE IF NOT EXISTS Responses (id integer primary key, userid text, respNum integer, response text, words integer);").run();
 data.prepare("CREATE TABLE IF NOT EXISTS Votes (id integer primary key, userid text, voteNum integer, seed text, vote text);").run();
 console.log("Done.");
-
+*/
 
 const fs = require("fs");
 const sgit = require("simple-git")();
@@ -124,6 +128,7 @@ app.use(helmet.contentSecurityPolicy({
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:"],
     scriptSrc: ["'self'", "'sha256-V5MGK9/CO7JvQzUHNNiGSkY2upVgeB0jGjzDUeKicl8='", "'sha256-Fi2rhYYy0MhXdVQgpTA1q0d2RyIsSP9Z69PjN85GiYg='", "'sha256-G7bcDiYmXiz83JPv7w1RK1CKFhJ38I0NutSnzhNmHMI='", "'sha256-0p7PxxIIvj4LCxwSZPKtMp1fOWhDvyYffGYgf56gSgI='"],
+    connectSrc: ["'self'", "https://pmpuns.com"],
   },
 }));
 

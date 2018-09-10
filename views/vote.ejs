@@ -7,12 +7,12 @@
     <link rel="stylesheet" type="text/css" href="/vote.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
-  <body data-id="<%= user.id %>" data-seed="<%= seed %>", data-num="<%= screenNum %>">
+  <body data-id="<%= user.id %>" data-seed="<%= seed %>" data-num="<%= screenNum %>" data-ns="<%= priorScreens.length %>">
     <ul class="navbar">
       <li class="navlink"><a id="home" href="/user/home">Home</a></li>
       <li class="navlink"><a id="respond" href="/user/respond">Respond</a></li>
       <li class="navlink active"><a id="vote" href="/user/vote">Vote</a></li>
-      <li class="navlink right"><a id="logout" href="/logout">Logout</a></li>
+      <li class="navlink right"><a id="logout" href="/">Logout</a></li>
       <li class="navlink right"><p><%= user.username %></p></li>
     </ul>
     <% if (isVot) { %>
@@ -24,10 +24,11 @@
         <ul id="currscreen">
           <% for(let i = 0; i < screen.length; i++) {%>
             <li class="resp">
-              <div class="respcont <%= (screen[i][1] > 10) ? 'invalid' : 'valid'%>">
-                <div class="vl"><h3 class="vl"><%= String.fromCharCode(i+65)%></h3></div>
-                <input class="response" type="text" value="<%= screen[i][0] %>" disabled></input>
-                <div class="wc"><h3 class="wc"><%= screen[i][1]%></h3></div>
+              <% if (vote) {ind = vote.charCodeAt(i) - 65;} else {ind = i}%>
+              <div class="respcont <%= (screen[ind][1] > 10) ? 'invalid' : 'valid'%>">
+                <div class="vl"><h3 class="vl"><%= String.fromCharCode(ind+65)%></h3></div>
+                <input class="response" type="text" value="<%= screen[ind][0] %>" disabled></input>
+                <div class="wc"><h3 class="wc"><%= screen[ind][1]%></h3></div>
               </div>
             </li>
           <%}%>
@@ -39,11 +40,11 @@
       </div>
       <table style="margin: 40px auto;">
         <tr>
-          <th><button type="button" href="/user/vote">Current Screen</button></th>
+          <th><button class="curr" type="button" href="/user/vote">Current Screen</button></th>
         </tr>
         <% for (let i = priorScreens.length - 1; i >= 0; i--) {%>
           <tr>
-            <th><button type="button" href="/user/vote?screenNum=<%=encodeURIComponent(i+1)%>">Screen <%= i+1 %></button></th>
+            <th><button class="prev" type="button" href="/user/vote?screenNum=<%=encodeURIComponent(i+1)%>">Screen <%= i+1 %></button></th>
           </tr>
         <%}%>
       </table>
@@ -54,7 +55,7 @@
     </div>
     <% } %>
   </body>
-  <script src="/jquery-3.3.1.js"></script>
-  <script src="/jquery-ui.js"></script>
-  <script src="/vote.js"></script>
+  <script src="/jquery-3.3.1.js"  type="text/javascript"></script>
+  <script src="/jquery-ui.js"  type="text/javascript"></script>
+  <script src="/vote.js"  type="text/javascript"></script>
 </html>

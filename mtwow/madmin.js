@@ -24,6 +24,7 @@ var getAllContestants = data.prepare("SELECT * FROM Contestants;");
 var editNumResps = data.prepare("UPDATE Contestants SET numResps = @numResps WHERE userid = @userid;");
 var killContestant = data.prepare("DELETE FROM Contestants WHERE userid = @userid;");
 var removeResponse = data.prepare("DELETE FROM Votes WHERE id = @id;");
+var getAllResponses = data.prepare("SELECT * FROM Responses ORDER BY userid;");
 
 module.exports = async (client, msg) => {
   var args = msg.content.split(/[\^&\s]+/g);
@@ -75,6 +76,28 @@ module.exports = async (client, msg) => {
       respNums = parseInt(args[3]);
       editNumResps.run({userid: id, numResps: respNums});
       client.channels.get("480897127262715924").send(`Gave user with ID ${id} ${respNums} response${(respNums != 1) ? "s" : ""}`);
+      break;
+    case "listAllResps":
+      resps = getAllResponses.all();
+      resps.forEach((val, ind, arr) => {
+        arr[ind] = `${client.users.get(val.userid).username} submitted \`\`${val.response}\`\` for response ${val.respNum}, which was counted as ${val.words} word${(val.words != 1) ? "s" : ""}.`; 
+      });
+      msg.channel.send(resps.join("\n"));
+      break;
+    case "listAllContestants":
+      data = getAllContestants.all();
+      data.forEach((val, ind, arr) => {
+        arr[ind] = `${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.`;
+      });
+      msg.channel.send("```\n" + data.join("\n") + "\n```");
+      break;
+    case "correctContestantData":
+      conts = getAllContestants.all()
+      conts.forEach((val, ind, arr) => {
+        resps = getResps.all({userid: val.userid}) || [];
+        editSubResps.run({userid: val.userid, subResps: resps.length});
+        msg.channel.send(`Contestant ${client.users.get(val.userid).username}'s number of responses was corrected to ${resps.length}.`);
+      });
       break;
   }
 }

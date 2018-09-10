@@ -1,5 +1,6 @@
 /* jshint esversion: 6 */
 const fs = require("fs");
+const Discord = require("discord.js");
 const Random = require("random-js");
 var mt = Random.engines.mt19937();
 const sgen = require("./screengen.js");
@@ -38,9 +39,73 @@ module.exports = (client, msg) => {
   log = client.channels.get("480897127262715924");
   // args[0] is empty, args[1] has command, args[2]+ are arguments to the command
   switch (args[1]) {
+    case "help":
+      if (!args[2]) {
+        otp = new Discord.RichEmbed()
+        .setTitle("mTWOW General Help")
+        .setColor(0X3DAEFF)
+        .setTimestamp(new Date())
+        .setFooter("Contact PMP#5728 for any and all issues.")
+        .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** *[vote number]*")
+        .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+        .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+      } else {
+        switch (args[2]) {
+          case "help":
+            otp = new Discord.RichEmbed()
+            .setTitle("...seriously?")
+            .setColor(0X3DAEFF)
+            .setTimestamp(new Date())
+            .setFooter("Contact PMP#5728 for any and all issues.")
+            .addField("Usage", "m^help *[command]*")
+            .addField("Arguments", "command: The command you wish to obtain help for. If none is given, gives mTWOW General Help.")
+            .addField("Effect", "User receives the requested help message.")
+            .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+            .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+            break;
+          case "signup":
+            otp = new Discord.RichEmbed()
+            .setTitle("mTWOW SIGNUP Command")
+            .setColor(0X3DAEFF)
+            .setTimestamp(new Date())
+            .setFooter("Contact PMP#5728 for any and all issues.")
+            .addField("Usage", "m^signup")
+            .addField("Arguments", "None.")
+            .addField("Effect", "User signs up for the mTWOW.")
+            .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+            .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+            break;
+          case "respond":
+            otp = new Discord.RichEmbed()
+            .setTitle("mTWOW RESPOND Command")
+            .setColor(0X3DAEFF)
+            .setTimestamp(new Date())
+            .setFooter("Contact PMP#5728 for any and all issues.")
+            .addField("Usage", "m^respond [response number] [response]")
+            .addField("Arguments", "response number: Indicates which response you wish to submit.\nresponse: The response you wish to submit.")
+            .addField("Effect", "User sends in response [response number] as [response].")
+            .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+            .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+            break;
+          case "vote":
+            otp = new Discord.RichEmbed()
+            .setTitle("mTWOW VOTE Command")
+            .setColor(0X3DAEFF)
+            .setTimestamp(new Date())
+            .setFooter("Contact PMP#5728 for any and all issues.")
+            .addField("Usage", "m^vote **[vote]** *[vote number]*")
+            .addField("Arguments", "vote: Your vote for the screen in question.\nvote number: Indicates the screen being voted on. If not given, defaults to current screen.")
+            .addField("Effect", "User sends in vote [vote] for their screen number [vote number]")
+            .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+            .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+            break;
+        }
+      }
+      msg.channel.send({content: "Here ya go!", embed: otp});
+      break;
     case "signup":
       contestantData = getContestantData.get({userid: msg.author.id});
-      if (getStatus.get().current != "signups") {
+      if (getStatus.get().current != "signups" && getStatus.get().current != "responding") {
         msg.channel.send("Sorry, but you can't sign up right now. Maybe later?")
         .then(msg => {sent = msg;})
         .catch(console.error);
@@ -91,7 +156,12 @@ module.exports = (client, msg) => {
       }
       if (!contestantData) {
         addContestant.run({userid: msg.author.id, subResps: 0, numResps: 1});
-        
+        if (!client.guilds.get("439313069613514752").members.get(msg.author.id).roles.has("481812129096138772")) {
+          client.guilds.get("439313069613514752").members.get(msg.author.id).addRole("481812129096138772");
+        }
+        if (!client.guilds.get("439313069613514752").members.get(msg.author.id).roles.has("481812076050907146")) {
+          client.guilds.get("439313069613514752").members.get(msg.author.id).addRole("481812076050907146");
+        }
         /*
         msg.channel.send("You're no contestant! Get out!")
         .then(msg => {sent = msg;})
@@ -105,6 +175,15 @@ module.exports = (client, msg) => {
       }
       contestantData = getContestantData.get({userid: msg.author.id});
       respNum = parseInt(args[2]);
+      if (isNaN(respNum)) {
+        msg.channel.send("That's no number, that's a String!")
+        .then(msg => {sent = msg;})
+        .catch(console.error);
+        setTimeout(() => {
+          sent.delete();
+        }, 10000);
+        break;
+      }
       if (respNum > contestantData.numResps) {
         msg.channel.send("You don't have that many responses!")
         .then(msg => {sent = msg;})
@@ -153,6 +232,16 @@ module.exports = (client, msg) => {
         }, 10000);
         break;
       }
+      if (msg.channel.type != "dm") {
+        msg.delete();
+        msg.channel.send("Oi, take this into DMs, please.")
+        .then(msg => {sent = msg;})
+        .catch(console.error);
+        setTimeout(() => {
+          sent.delete();
+        }, 10000);
+        break;
+      }
       var screen;
       voterData = getVoterData.get({userid: msg.author.id});
       contestantData = getContestantData.get({userid: msg.author.id});
@@ -185,6 +274,15 @@ module.exports = (client, msg) => {
         msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
       } else {
         if (args[3]) {
+          if (isNaN(parseInt(args[3]))) {
+            msg.channel.send("That's no number, that's a String!")
+            .then(msg => {sent = msg;})
+            .catch(console.error);
+            setTimeout(() => {
+              sent.delete();
+            }, 10000);
+            break;
+          }
           screen = sgen(seeds[parseInt(args[3]) - 1], "internal");
         } else {
           screen = sgen(seeds[seeds.length - 1], "internal");
@@ -227,5 +325,46 @@ module.exports = (client, msg) => {
           msg.channel.send(`This is screen number ${voterData.voteCount+1}.\n\n${screen}\n\n`);
         }
       }
+      break;
+    case "responseinfo":
+      if (msg.channel.type != "dm") {
+        msg.delete();
+        msg.channel.send("Oi, take this into DMs, please.")
+        .then(msg => {sent = msg;})
+        .catch(console.error);
+        setTimeout(() => {
+          sent.delete();
+        }, 10000);
+        break;
+      }
+      contestantData = getContestantData.get({userid: msg.author.id});
+      if (!contestantData) {
+        msg.channel.send("You're not a contestant.")
+        .then(msg => {sent = msg;})
+        .catch(console.error);
+        setTimeout(() => {
+          sent.delete();
+        }, 10000);
+      }
+      responses = getResps.all({userid: msg.author.id});
+      if (!responses) {
+        responses = [];
+      }
+      otp = "";
+      for (i = 1; i <= contestantData.numResps; i++) {
+        ind = responses.findIndex((val) => {
+          return val.respNum == i; 
+        });
+        if (ind != -1) {
+          otp += `Response ${i}: \`\`${responses[ind].response}\`\`. Word count: ${responses[ind].words}.\n`;
+        } else {
+          otp += `Response ${i}: None.\n`;
+        }
+      }
+      msg.channel.send(otp);
+      break;
+    case "voteinfo":
+
+      break;
   }
 };
