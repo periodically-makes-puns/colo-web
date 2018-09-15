@@ -50,7 +50,7 @@ const restart = require('proc-restart');
 client.on("message", (msg) => { // on every message that gets sent
   // run this stuff
   console.log(`${msg.author.username} sent a message. The content was \n${msg.content}\n`);
-  const args = msg.content.split(/[\^& ]+/g);
+  const args = msg.content.split(/[\^&\s]+/g);
   if (msg.author.bot) {return;} // breaks if sender is bot
   //msg.channel.send(msg.content); // echoes content
   if (admins.indexOf(msg.author.id) != -1 && msg.content.startsWith("&")) {
@@ -92,7 +92,7 @@ client.on("message", (msg) => { // on every message that gets sent
       default:
         msg.channel.send("That isn't a valid function.");
     }
-  } else if (msg.content.startsWith("m&")) {
+  } else if (admins.indexOf(msg.author.id) != -1 && msg.content.startsWith("m&")) {
     console.log(`${msg.author.username} ran a MINITWOW ADMINISTRATOR type command. ⚠ This requires admin permissions. ⚠`);
     madmin(client, msg);
   } else if (msg.content.startsWith("&")) {
