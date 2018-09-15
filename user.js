@@ -32,6 +32,22 @@ var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@use
 
 var mt = Random.engines.mt19937();
 
+var begin = data.prepare("BEGIN");
+var commit = data.prepare("COMMIT");
+var rollback = data.prepare("ROLLBACK");
+
+function asTransaction(func) {
+  return function (...args) {
+    begin.run();
+    try {
+      func(...args);
+      commit.run();
+    } finally {
+      if (data.inTransaction) rollback.run();
+    }
+  };
+}
+
 const filter = (arr, func) => {
   let otp = [];
   for (let i = 0; i < arr.length; i++) {
@@ -44,7 +60,7 @@ const filter = (arr, func) => {
 
 router.use(express.static(path.join(__dirname, "public")));
 
-router.use("/", (req, res, next) => {
+router.use("/", asTransaction((req, res, next) => {
   const data = fs.readFileSync("./access.json");
   const json = JSON.parse(data);
   var sha256 = crypto.createHash("SHA256");
@@ -88,9 +104,9 @@ router.use("/", (req, res, next) => {
     // attach CSRF
   }
   next();
-});
+}));
 
-router.get("/home", (req, res, next) => {
+router.get("/home", asTransaction((req, res, next) => {
   let contestantData = getContestantData.get({userid: req.id}) || {subResps: 0, numResps: 0};
   let voterData = getVoterData.get({userid: req.id}) || {voteCount: undefined};
   let overWC = getRespsOverWC.all({userid: req.id});
@@ -103,9 +119,9 @@ router.get("/home", (req, res, next) => {
     'numVotes': voterData.voteCount,
     "signed_up": contestantData.numResps,
   });
-});
+}));
 
-router.get("/respond", (req, res, next) => {
+router.get("/respond", asTransaction((req, res, next) => {
   let status = getStatus.get().current;
   let contestantData = getContestantData.get({userid: req.id})  || {subResps: 0, numResps: 0};
   let responses = getResps.all({userid: req.id});
@@ -116,9 +132,9 @@ router.get("/respond", (req, res, next) => {
     'responses': responses,
     'isRes': status == "responding",
   });
-});
+}));
 
-router.get("/vote", (req, res, next) => {
+router.get("/vote", asTransaction((req, res, next) => {
   let voterData = getVoterData.get({userid: req.id});
   let votes = getVotes.all({userid: req.id});
   let contestantData = getContestantData.get({userid: req.id});
@@ -185,9 +201,9 @@ router.get("/vote", (req, res, next) => {
     'priorScreens': getVoteSeeds.all({userid: req.id}),
     'isVot': getStatus.get().current == "voting",
   });
-});
+}));
 
-router.post("/signup", (req, res, next) => {
+router.post("/signup", asTransaction((req, res, next) => {
   if (getStatus.get().current != "signups" && getStatus.get().current != "responding") {
     res.status(400);
     return;
@@ -204,9 +220,9 @@ router.post("/signup", (req, res, next) => {
     addContestant.run({userid: req.id, subResps: 0, numResps: 1});
   }
   res.status(200).send("OK");
-});
+}));
 
-router.post("/respond", (req, res, next) => {
+router.post("/respond", asTransaction((req, res, next) => {
   if (getStatus.get().current != "responding") {
     res.status(400);
     return;
@@ -241,9 +257,9 @@ router.post("/respond", (req, res, next) => {
     }
   }
   res.status(200).send("OK");
-});
+}));
 
-router.post("/vote", (req, res, next) => {
+router.post("/vote", asTransaction((req, res, next) => {
   let screen;
   let seed;
   let votes = getVoteSeeds.all({userid: req.id});
@@ -260,6 +276,10 @@ router.post("/vote", (req, res, next) => {
     return;
   }
   let used = [false, false, false, false, false, false, false, false, false, false];
+  if (req.body.vote.length != screen.length) {
+    res.status(400).send("Partial votes not allowed.");
+    return;
+  }
   for (let i = 0; i < req.body.vote.length; i++) {
     if ((req.body.vote.charCodeAt(i) - 65 < 0) || (req.body.vote.charCodeAt(i) - 65 > screen.length)) {
       res.status(400).send("An invalid character has been detected in your vote.");
@@ -292,9 +312,9 @@ router.post("/vote", (req, res, next) => {
     editVote.run({userid: req.id, voteNum: parseInt(req.body.screenNum), vote: req.body.vote});
   }
   res.status(200).send("OK");
-});
+}));
 
-router.post('/logout', (req, res, next) => {
+router.post('/logout', asTransaction((req, res, next) => {
   fs.readFile("./access.json", "utf-8", (err, data) => {
     tokens = JSON.parse(data);
     delete tokens[req.id];
@@ -308,6 +328,6 @@ router.post('/logout', (req, res, next) => {
   res.clearCookie("login");
   res.clearCookie("s");
   res.redirect("https://www.pmpuns.com");
-});
+}));
 
 module.exports = router;

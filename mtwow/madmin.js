@@ -21,83 +21,118 @@ var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@use
 var changeStatus = data.prepare("UPDATE Status SET current = @status;");
 var changePrompt = data.prepare("UPDATE Status SET prompt = @prompt;");
 var getAllContestants = data.prepare("SELECT * FROM Contestants;");
+var getAllVotes = data.prepare("SELECT * FROM Votes ORDER BY userid;");
 var editNumResps = data.prepare("UPDATE Contestants SET numResps = @numResps WHERE userid = @userid;");
 var killContestant = data.prepare("DELETE FROM Contestants WHERE userid = @userid;");
 var removeResponse = data.prepare("DELETE FROM Votes WHERE id = @id;");
 var getAllResponses = data.prepare("SELECT * FROM Responses ORDER BY userid;");
 
+var begin = data.prepare("BEGIN");
+var commit = data.prepare("COMMIT");
+var rollback = data.prepare("ROLLBACK");
+
 module.exports = async (client, msg) => {
-  var args = msg.content.split(/[\^&\s]+/g);
-  switch (args[1]) {
-    case "status":
-      changeStatus.run({status: args[2]});
-      msg.channel.send(`Set status to ${args[2]}`);
-      break;
-    case "startresp":
-      changeStatus.run({status: "responding"});
-      contestants = getAllContestants.all();
-      for (i = 0; i < contestants.length; i++) {
-        try {
-          await client.guilds.get("439313069613514752").members.get(contestants[i].userid).addRoles(["481812076050907146", "481812129096138772"], `Contestant ${i+1} of ${contestants.length}`);
-          client.channels.get("480897127262715924").send(`Gave contestant ${client.users.get(contestants[i].userid).username} roles ${client.guilds.get("439313069613514752").roles.get("481812076050907146").name}, ${client.guilds.get("439313069613514752").roles.get("481812129096138772").name}`);
-        } catch (e) {
-          console.error(e);
-          client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Contestant with ID ${contestants[i].userid} was not found! <@248953835899322370> ⚠`);
-        }
-      }
-      changePrompt.run({prompt: msg.content.split("``")[1]});
-      break;
-    case "startvote": 
-      changeStatus.run({status: "voting"});
-      contestants = getAllContestants.all();
-      for (i = 0; i < contestants.length; i++) {
-        try {
-          id = contestants[i].userid;
-          contestant = client.guilds.get("439313069613514752").members.get(id);
-          if (contestants[i].subResps == 0) {
-            client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} has DNPed. Revoking roles now.`);
-            await contestant.removeRoles(["481812076050907146", "481812129096138772", "481831093964636161"]);
-            await contestant.addRole("481831151674327042");
-            killContestant.run({userid: id});
-          } else if (contestants[i].subResps < contestants[i].numResps) {
-            client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} lost some responses. Revoking roles now.`);
-            await contestant.removeRole("481812129096138772");
-          } else {
-            client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} fully responded.`);
+  begin.run();
+  try {
+    var args = msg.content.split(/[\^&\s]+/g);
+    switch (args[1]) {
+      case "status":
+        changeStatus.run({status: args[2]});
+        msg.channel.send(`Set status to ${args[2]}`);
+        break;
+      case "startresp":
+        changeStatus.run({status: "responding"});
+        contestants = getAllContestants.all();
+        for (i = 0; i < contestants.length; i++) {
+          try {
+            await client.guilds.get("439313069613514752").members.get(contestants[i].userid).addRoles(["481812076050907146", "481812129096138772"], `Contestant ${i+1} of ${contestants.length}`);
+            client.channels.get("480897127262715924").send(`Gave contestant ${client.users.get(contestants[i].userid).username} roles ${client.guilds.get("439313069613514752").roles.get("481812076050907146").name}, ${client.guilds.get("439313069613514752").roles.get("481812129096138772").name}`);
+          } catch (e) {
+            console.error(e);
+            client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Contestant with ID ${contestants[i].userid} was not found! <@248953835899322370> ⚠`);
           }
+        }
+        changePrompt.run({prompt: msg.content.split("``")[1]});
+        break;
+      case "startvote": 
+        changeStatus.run({status: "voting"});
+        contestants = getAllContestants.all();
+        for (i = 0; i < contestants.length; i++) {
+          try {
+            id = contestants[i].userid;
+            contestant = client.guilds.get("439313069613514752").members.get(id);
+            if (contestants[i].subResps == 0) {
+              client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} has DNPed. Revoking roles now.`);
+              await contestant.removeRoles(["481812076050907146", "481812129096138772", "481831093964636161"]);
+              await contestant.addRole("481831151674327042");
+              killContestant.run({userid: id});
+            } else if (contestants[i].subResps < contestants[i].numResps) {
+              client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} lost some responses. Revoking roles now.`);
+              await contestant.removeRole("481812129096138772");
+            } else {
+              client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} fully responded.`);
+            }
+          } catch (e) {
+            console.error(e);
+            client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Something went wrong when updating contestant with ID ${contestants[i].userid}! <@248953835899322370> ⚠`);
+          }
+        }
+        break;
+      case "giveResponses":
+        id = args[2];
+        respNums = parseInt(args[3]);
+        editNumResps.run({userid: id, numResps: respNums});
+        client.channels.get("480897127262715924").send(`Gave user with ID ${id} ${respNums} response${(respNums != 1) ? "s" : ""}`);
+        break;
+      case "listAllResps":
+        resps = getAllResponses.all();
+        resps.forEach((val, ind, arr) => {
+          msg.channel.send(`${client.users.get(val.userid).username} submitted \`\`${val.response}\`\` for response ${val.respNum}, which was counted as ${val.words} word${(val.words != 1) ? "s" : ""}.`); 
+        });
+        break;
+      case "listAllContestants":
+        conts = getAllContestants.all();
+        conts.forEach((val, ind, arr) => {
+          msg.channel.send(`${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.`);
+        });
+        break;
+      case "correctContestantData":
+        conts = getAllContestants.all();
+        conts.forEach((val, ind, arr) => {
+          resps = getResps.all({userid: val.userid}) || [];
+          editSubResps.run({userid: val.userid, subResps: resps.length});
+          msg.channel.send(`Contestant ${client.users.get(val.userid).username}'s number of responses was corrected to ${resps.length}.`);
+        });
+        break;
+      case "listAllVotes":
+        votes = getAllVotes.all();
+        votes.forEach((val, ind, arr) => {
+          msg.channel.send(`${client.users.get(val.userid).username} voted on Screen ID ${val.seed} as vote number ${val.voteNum} with vote ${val.vote}.`);
+        });
+        break;
+      case "SQLUpdate":
+        try {
+          data.prepare(args.slice(2).join(" ")).run();
         } catch (e) {
           console.error(e);
-          client.channels.get("480897127262715924").send(`⚠ <@262173579876106240> Something went wrong when updating contestant with ID ${contestants[i].userid}! <@248953835899322370> ⚠`);
+          msg.channel.send("Failed.");
         }
-      }
-      break;
-    case "giveResponses":
-      id = args[2];
-      respNums = parseInt(args[3]);
-      editNumResps.run({userid: id, numResps: respNums});
-      client.channels.get("480897127262715924").send(`Gave user with ID ${id} ${respNums} response${(respNums != 1) ? "s" : ""}`);
-      break;
-    case "listAllResps":
-      resps = getAllResponses.all();
-      resps.forEach((val, ind, arr) => {
-        arr[ind] = `${client.users.get(val.userid).username} submitted \`\`${val.response}\`\` for response ${val.respNum}, which was counted as ${val.words} word${(val.words != 1) ? "s" : ""}.`; 
-      });
-      msg.channel.send(resps.join("\n"));
-      break;
-    case "listAllContestants":
-      data = getAllContestants.all();
-      data.forEach((val, ind, arr) => {
-        arr[ind] = `${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.`;
-      });
-      msg.channel.send("```\n" + data.join("\n") + "\n```");
-      break;
-    case "correctContestantData":
-      conts = getAllContestants.all()
-      conts.forEach((val, ind, arr) => {
-        resps = getResps.all({userid: val.userid}) || [];
-        editSubResps.run({userid: val.userid, subResps: resps.length});
-        msg.channel.send(`Contestant ${client.users.get(val.userid).username}'s number of responses was corrected to ${resps.length}.`);
-      });
-      break;
+        msg.channel.send("Success.");
+        break;
+      case "SQLGet":
+        try {
+          sqlotp = data.prepare(args.slice(2).join(" ")).get();
+          msg.channel.send(JSON.stringify(sqlotp));
+        } catch (e) {
+          console.error(e);
+          msg.channel.send("Failed.");
+        }
+        break;
+      default:
+        msg.channel.send("...that's not a command.");
+    }
+    commit.run();
+  } finally {
+    if (data.inTransaction) rollback.run();
   }
 }
