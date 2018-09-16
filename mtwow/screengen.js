@@ -11,6 +11,9 @@ var getStatus = data.prepare("SELECT current FROM Status;");
 var getAnonSpecificResp = data.prepare("SELECT id, response, words FROM Responses WHERE userid = @userid AND respNum = @respNum;");
 var getAnonAllResps = data.prepare("SELECT id, response, words FROM Responses ORDER BY id;");
 var getAnonAllRespsButOne = data.prepare("SELECT id, response, words FROM Responses WHERE userid != @userid OR respNum != @respNum ORDER BY id;");
+var getAnonAllRespsButSelf = data.prepare("SELECT id, response, words FROM Responses WHERE userid != @userid ORDER BY id;");
+
+
 
 module.exports = (seed, type) => {
   if (getStatus.get().current != "voting") {
@@ -34,8 +37,11 @@ module.exports = (seed, type) => {
     responses = getAnonAllRespsButOne.all({userid: seedargs[1], respNum: parseInt(seedargs[2])});
     out = out.concat(Random.sample(mt, responses, Math.min(9, responses.length)));
     wseed += `-${seedargs[1]}-${seedargs[2]}`;
+  } else if (seedargs[1] != undefined) {
+    responses = getAnonAllRespsButSelf.all({userid: seedargs[1]});
+    out = Random.sample(mt, responses, Math.min(10, responses.length));
   } else {
-    out = out.concat(Random.sample(mt, responses, Math.min(10, responses.length)));
+    out = Random.sample(mt, responses, Math.min(10, responses.length));
   }
   let otp;
   switch (type) {
@@ -57,7 +63,7 @@ module.exports = (seed, type) => {
     case "internal":
       otp = [];
       for (let i = 0; i < out.length; i++) {
-        otp.push(out.id);
+        otp.push(out[i].id);
       }
       break;
     case "anondata":

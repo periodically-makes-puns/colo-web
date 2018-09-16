@@ -32,9 +32,9 @@ var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@use
 
 var mt = Random.engines.mt19937();
 
-var begin = data.prepare("BEGIN");
-var commit = data.prepare("COMMIT");
-var rollback = data.prepare("ROLLBACK");
+var begin = data.prepare("BEGIN;");
+var commit = data.prepare("COMMIT;");
+var rollback = data.prepare("ROLLBACK;");
 
 function asTransaction(func) {
   return function (...args) {
@@ -60,7 +60,7 @@ const filter = (arr, func) => {
 
 router.use(express.static(path.join(__dirname, "public")));
 
-router.use("/", asTransaction((req, res, next) => {
+router.use("/", (req, res, next) => {
   const data = fs.readFileSync("./access.json");
   const json = JSON.parse(data);
   var sha256 = crypto.createHash("SHA256");
@@ -104,7 +104,7 @@ router.use("/", asTransaction((req, res, next) => {
     // attach CSRF
   }
   next();
-}));
+});
 
 router.get("/home", asTransaction((req, res, next) => {
   let contestantData = getContestantData.get({userid: req.id}) || {subResps: 0, numResps: 0};
@@ -153,7 +153,6 @@ router.get("/vote", asTransaction((req, res, next) => {
     mt.autoSeed();
     let seed = Random.integer(1, 11881376)(mt);
     mt.seed(seed);
-    
     if (contestantData) {
       if (voterData.voteCount < contestantData.numResps) {
         gseed = `${seed}-${req.id}-${voterData.voteCount+1}`;
@@ -163,7 +162,6 @@ router.get("/vote", asTransaction((req, res, next) => {
     } else {
       gseed = `${seed}`;
     }
-    
     if (req.query.hasOwnProperty("screenNum")) {
       let rep = votes[parseInt(req.query.screenNum)-1];
       if (!rep || !rep.seed) {
@@ -264,13 +262,14 @@ router.post("/vote", asTransaction((req, res, next) => {
   let seed;
   let votes = getVoteSeeds.all({userid: req.id});
   let voterData = getVoterData.get({userid: req.id});
+  voteNum = votes.length;
   if (req.body.hasOwnProperty("screenNum") && parseInt(req.body.screenNum) != votes.length + 1) {
     seed = votes[parseInt(req.body.screenNum) - 1].seed;
+    voteNum = parseInt(req.body.screenNum);
   } else {
     seed = votes[votes.length - 1].seed;
   }
   screen = sgen(seed, "internal");
-  voteNum = parseInt(req.body.screenNum);
   if (req.body.seed != seed) {
     res.status(400).send("Authentication details incorrect");
     return;
@@ -288,9 +287,10 @@ router.post("/vote", asTransaction((req, res, next) => {
       res.status(400).send("A repeated character has been detected in your vote.");
       return;
     }
+    used[req.body.vote.charCodeAt(i) - 65] = true;
   }
-  if (seed == votes[votes.length - 1].seed) {
-    editVote.run({userid: req.id, voteNum: votes.length, vote: req.body.vote});
+  editVote.run({userid: req.id, voteNum: voteNum, vote: req.body.vote});
+  if (seed == votes[votes.length - 1].seed) { 
     editVoteCount.run({userid: req.id, voteCount: voterData.voteCount + 1});
     let contestantData = getContestantData.get({userid: req.id});
     voterData = getVoterData.get({userid: req.id});

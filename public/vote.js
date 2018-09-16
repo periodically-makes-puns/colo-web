@@ -18,7 +18,9 @@ $(document).ready(() => {
       $("#votelets").val(otp);
     }
   });
+
   $("#trigger").click((e) => {
+    e.preventDefault();
     let vote = $("#votelets").val();
     $.post(`/user/vote`, {
       screenNum: screenNum,

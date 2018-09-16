@@ -1,5 +1,4 @@
 /* jshint esversion: 6 */
-const fs = require("fs");
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 var getStatus = data.prepare("SELECT current FROM Status;");
@@ -27,9 +26,9 @@ var killContestant = data.prepare("DELETE FROM Contestants WHERE userid = @useri
 var removeResponse = data.prepare("DELETE FROM Votes WHERE id = @id;");
 var getAllResponses = data.prepare("SELECT * FROM Responses ORDER BY userid;");
 
-var begin = data.prepare("BEGIN");
-var commit = data.prepare("COMMIT");
-var rollback = data.prepare("ROLLBACK");
+var begin = data.prepare("BEGIN;");
+var commit = data.prepare("COMMIT;");
+var rollback = data.prepare("ROLLBACK;");
 
 module.exports = async (client, msg) => {
   begin.run();

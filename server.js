@@ -95,7 +95,7 @@ client.on("message", (msg) => { // on every message that gets sent
   } else if (admins.indexOf(msg.author.id) != -1 && msg.content.startsWith("m&")) {
     console.log(`${msg.author.username} ran a MINITWOW ADMINISTRATOR type command. ⚠ This requires admin permissions. ⚠`);
     madmin(client, msg);
-  } else if (msg.content.startsWith("&")) {
+  } else if (msg.content.startsWith("&") || msg.content.startsWith("m&")) {
     msg.channel.send("You can't do that!");
   } else if (msg.content.startsWith("^")) {
     if (msg.content == "^") {

@@ -10,6 +10,7 @@ var data = new SQLite("./mtwow/mtwow.sqlite");
 
 var getStatus = data.prepare("SELECT current FROM Status;");
 var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid ORDER BY respNum;");
+var getRespById = data.prepare("SELECT * FROM Responses WHERE id = @id;");
 var getContestantData = data.prepare("SELECT * FROM Contestants WHERE userid = @userid;");
 var getVoterData = data.prepare("SELECT * FROM Voters WHERE userid = @userid;");
 var getVotes = data.prepare("SELECT * FROM Votes WHERE userid = @userid ORDER BY voteNum;");
@@ -25,9 +26,9 @@ var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, num
 var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@userid, 0)");
 var numContestants = data.prepare("SELECT count(*) FROM Contestants;");
 
-var begin = data.prepare("BEGIN");
-var commit = data.prepare("COMMIT");
-var rollback = data.prepare("ROLLBACK");
+var begin = data.prepare("BEGIN;");
+var commit = data.prepare("COMMIT;");
+var rollback = data.prepare("ROLLBACK;");
 
 
 const filter = (arr, func) => {
@@ -54,7 +55,7 @@ module.exports = (client, msg) => {
           .setColor(0X3DAEFF)
           .setTimestamp(new Date())
           .setFooter("Contact PMP#5728 for any and all issues.")
-          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** *[vote number]*")
+          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** *[vote number]*\nresponseinfo\nvotetracker")
           .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
           .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
         } else {
@@ -104,6 +105,30 @@ module.exports = (client, msg) => {
               .addField("Usage", "m^vote **[vote]** *[vote number]*")
               .addField("Arguments", "vote: Your vote for the screen in question.\nvote number: Indicates the screen being voted on. If not given, defaults to current screen.")
               .addField("Effect", "User sends in vote [vote] for their screen number [vote number]")
+              .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+              .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+              break;
+            case "responseinfo":
+              otp = new Discord.RichEmbed()
+              .setTitle("mTWOW RESPONSEINFO Command")
+              .setColor(0X3DAEFF)
+              .setTimestamp(new Date())
+              .setFooter("Contact PMP#5728 for any and all issues.")
+              .addField("Usage", "m^responseinfo")
+              .addField("Arguments", "None.")
+              .addField("Effect", "User receives summary of their responses.")
+              .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+              .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+              break;
+            case "votetracker":
+              otp = new Discord.RichEmbed()
+              .setTitle("mTWOW VOTETRACKER Command")
+              .setColor(0X3DAEFF)
+              .setTimestamp(new Date())
+              .setFooter("Contact PMP#5728 for any and all issues.")
+              .addField("Usage", "m^votetracker")
+              .addField("Arguments", "None.")
+              .addField("Effect", "User receives summary of their votes.")
               .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
               .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
               break;
@@ -258,7 +283,7 @@ module.exports = (client, msg) => {
           addVoter.run({userid: msg.author.id});
         }
         voterData = getVoterData.get({userid: msg.author.id});
-        if (seeds == []) {
+        if (seeds.length == 0) {
           var gseed;
           mt.autoSeed();
           seed = Random.integer(1, 11881376)(mt);
@@ -266,7 +291,7 @@ module.exports = (client, msg) => {
           if (!voterData) addVoter.run({userid: msg.author.id}); 
           if (contestantData) {
             voterData = getVoterData.get({userid: msg.author.id});
-            if (voterData.voteCount < contestatntData.subResps) {
+            if (voterData.voteCount < contestantData.subResps) {
               voterData = getVoterData.get({userid: msg.author.id});
               gseed = `${seed}-${msg.author.id}-${voterData.voteCount+1}`;
               screen = sgen(gseed, "text");
@@ -279,8 +304,9 @@ module.exports = (client, msg) => {
             screen = sgen(gseed, "text");
           }
           addVoteSeed.run({userid: msg.author.id, voteNum: voterData.voteCount+1, seed: gseed});
-          msg.channel.send(`This is screen number ${json.voteCount[msg.author.id]+1}.\n\n${screen}\n\n`);
+          msg.channel.send(`This is screen number ${voterData.voteCount+1}.\n\n${screen}\n\n`);
         } else {
+          vseed = parseInt(args[3]) - 1;
           if (args[3]) {
             if (isNaN(parseInt(args[3]))) {
               msg.channel.send("That's no number, that's a String!")
@@ -291,14 +317,15 @@ module.exports = (client, msg) => {
               }, 10000);
               break;
             }
-            screen = sgen(seeds[parseInt(args[3]) - 1], "internal");
+            screen = sgen(seeds[parseInt(args[3]) - 1].seed, "internal");
           } else {
-            screen = sgen(seeds[seeds.length - 1], "internal");
+            screen = sgen(seeds[seeds.length - 1].seed, "internal");
+            vseed = seeds.length - 1;
           }
-          voteNum = parseInt(args[3]) || voterData.voteCount + 1;
+
           if (!args[2]) {
             msg.channel.send("Are you missing your vote? You need a vote.");
-            msg.channel.send(`Just to clarify, this is the screen you're voting on:\n\n${sgen(seeds[voteNum], "text")}`);
+            msg.channel.send(`Just to clarify, this is the screen you're voting on:\n\n${sgen(seeds[vseed].seed, "text")}`);
             return;
           }
           used = [false, false, false, false, false, false, false, false, false, false];
@@ -316,9 +343,9 @@ module.exports = (client, msg) => {
             }
             used[args[2].charCodeAt(i) - 65] = true;
           }
-          editVote.run({userid: msg.author.id, voteNum: voteNum, vote: args[2]});
-          msg.channel.send(`Your vote of ${args[2]} on screen number ${voteNum} has been recognised.`);
-          if (voteNum == voterData.voteCount + 1) {
+          editVote.run({userid: msg.author.id, voteNum: vseed + 1, vote: args[2]});
+          msg.channel.send(`Your vote of ${args[2]} on screen number ${vseed + 1} has been recognised.`);
+          if (vseed == seeds.length - 1) {
             let gseed;
             editVoteCount.run({userid: msg.author.id, voteCount: voterData.voteCount + 1});
             if (contestantData) {
@@ -338,6 +365,25 @@ module.exports = (client, msg) => {
             msg.channel.send(`This is screen number ${voterData.voteCount+2}.\n\n${screen}\n\n`);
           }
         }
+        break;
+      case "screen":
+        seeds = getVoteSeeds({userid: msg.author.id});
+        if (args[2]) {
+          if (isNaN(parseInt(args[2]))) {
+            msg.channel.send("That's no number, that's a String!")
+            .then(msg => {sent = msg;})
+            .catch(console.error);
+            setTimeout(() => {
+              sent.delete();
+            }, 10000);
+            break;
+          }
+          screen = sgen(seeds[parseInt(args[2]) - 1].seed, "text");
+        } else {
+          screen = sgen(seeds[seeds.length - 1].seed, "text");
+          vseed = seeds.length - 1;
+        }
+        msg.channel.send(screen);
         break;
       case "responseinfo":
         if (msg.channel.type != "dm") {
@@ -376,12 +422,102 @@ module.exports = (client, msg) => {
         }
         msg.channel.send(otp);
         break;
-      case "voteinfo":
-
+      case "votetracker":
+        if (msg.channel.type != "dm") {
+          msg.delete();
+          msg.channel.send("Oi, take this into DMs, please.")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          break;
+        }
+        voterData = getVoterData.get({userid: msg.author.id});
+        if (!voterData || voterData.voteCount == 0) {
+          msg.channel.send("No votes submitted. Please submit a vote before coming back.");
+          return;
+        }
+        votes = getVotes.all({userid: msg.author.id});
+        numResps = data.prepare("SELECT COUNT(*) AS count FROM Responses;").get().count;
+        scores = new Array(numResps);
+        for (i = 0; i < numResps; i++) {
+          scores[i] = [];
+        }
+        
+        votes.forEach((val) => {
+          screen = sgen(val.seed, "internal");
+          if (val.vote) {
+            for (i = 0; i < val.vote.length; i++) {
+              scores[screen[val.vote.charCodeAt(i) - 65] - 1].push((val.vote.length - i - 1) / (val.vote.length - 1));
+            }
+          }
+        });
+        scores.forEach((val, ind) => {
+          if (val.length != 0) { 
+            tot = val.reduce((prev, curr) => {
+              return prev + curr;
+            });
+          }
+          try {
+            tot /= val.length;
+            if (isNaN(tot) || tot == Infinity) {
+              tot = "NONE";
+            } else {
+              tot = (tot * 100).toFixed(2) + "%";
+            }
+          } catch (e) {
+            tot = "NONE";
+          }
+          scores[ind] = [ind, tot];
+        });
+        scores.sort((a, b) => {
+          if (a[1] == "NONE") {
+            if (b[1] == "NONE") {
+              return 0;
+            }
+            return 1;
+          }
+          if (b[1] == "NONE") {
+            return -1;
+          }
+          return parseFloat(b[1].substring(0, b[1].length - 1)) - parseFloat(a[1].substring(0, a[1].length - 1));
+        });
+        respMax = 0;
+        percMax = 0;
+        for (i = 0; i < scores.length; i++) {
+          resp = getRespById.get({id: scores[i][0] + 1});
+          scores[i] = [resp.response, scores[i][1]];
+          respMax = Math.max(respMax, resp.response.length);
+          percMax = Math.max(percMax, scores[i][1].length);
+        }
+        out = "```\n"
+        out += "-".repeat(respMax + percMax + 3) + "\n";
+        for (i = 0; i < scores.length; i++) {
+          portion = "|";
+          portion += scores[i][0] + " ".repeat(respMax - scores[i][0].length);
+          portion += "|";
+          portion += scores[i][1] + " ".repeat(percMax - scores[i][1].length);
+          portion += "|\n";
+          if (out.length + portion.length + respMax + percMax + 7 > 2000) {
+            out += "-".repeat(respMax + percMax + 3) + "\n```"
+            msg.channel.send(out);
+            out = "```\n"
+            out += "-".repeat(respMax + percMax + 3) + "\n";
+          }
+          out += portion;
+        }
+        out += "-".repeat(respMax + percMax + 3) + "\n```"
+        msg.channel.send(out);
         break;
     }
-    commit.run();
+    console.log(commit.run());
+  } catch (e) {
+    console.error(e);
   } finally {
-    if (data.inTransaction) rollback.run();
+    if (data.inTransaction) {
+      console.log("rolled back");
+      rollback.run();
+    }
   }
 };
