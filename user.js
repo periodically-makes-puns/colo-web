@@ -64,30 +64,30 @@ router.use("/", (req, res, next) => {
   const data = fs.readFileSync("./access.json");
   const json = JSON.parse(data);
   var sha256 = crypto.createHash("SHA256");
-  if (!req.cookies.login) {
+  if (!req.signedCookies.login) {
     res.status(403).send("Authentication details incorrect");
     return;
   }
-  req.id = req.cookies.login.split("-")[0];
-  sha256.update(req.id + req.cookies.s, "ascii");
+  req.id = req.signedCookies.login.split("-")[0];
+  sha256.update(req.id + req.signedCookies.s, "ascii");
   try {
     let a = sha256.digest("hex");
     if (a != json[req.id][2]) {
-      res.clearCookie("login");
-      res.clearCookie("s");
+      res.clearCookie("login", {signed: true});
+      res.clearCookie("s", {signed: true});
       res.status(403).send("Authentication details incorrect");
       return;
     }
   } catch (e) {
-    res.clearCookie("login");
-    res.clearCookie("s");
+    res.clearCookie("login", {signed: true});
+    res.clearCookie("s", {signed: true});
     res.status(403).send("Authentication details incorrect");
     return;
   }
   req.user = req.client.users.get(req.id);
   if (!req.user) {
-    res.clearCookie("login");
-    res.clearCookie("s");
+    res.clearCookie("login", {signed: true});
+    res.clearCookie("s", {signed: true});
     fs.readFile("./access.json", "utf-8", (err, data) => {
       tokens = JSON.parse(data);
       delete tokens[req.id];
@@ -149,7 +149,7 @@ router.get("/vote", asTransaction((req, res, next) => {
   }
   voterData = getVoterData.get({userid: req.id});
   let screenNum = voterData.voteCount+1;
-  if (votes == false) {
+  if (votes.length == 0) {
     mt.autoSeed();
     let seed = Random.integer(1, 11881376)(mt);
     mt.seed(seed);
@@ -164,7 +164,7 @@ router.get("/vote", asTransaction((req, res, next) => {
     }
     if (req.query.hasOwnProperty("screenNum")) {
       let rep = votes[parseInt(req.query.screenNum)-1];
-      if (!rep || !rep.seed) {
+      if (!rep || !req.hasOwnProperty("seed")) {
         res.status(400).send("Invalid screen number");
         return;
       } else {
@@ -314,7 +314,7 @@ router.post("/vote", asTransaction((req, res, next) => {
   res.status(200).send("OK");
 }));
 
-router.post('/logout', asTransaction((req, res, next) => {
+router.get('/logout', asTransaction((req, res, next) => {
   fs.readFile("./access.json", "utf-8", (err, data) => {
     tokens = JSON.parse(data);
     delete tokens[req.id];
@@ -325,8 +325,8 @@ router.post('/logout', asTransaction((req, res, next) => {
     delete a[req.id];
     fs.writeFile("./api/config.json", JSON.stringify(a), console.error);
   });
-  res.clearCookie("login");
-  res.clearCookie("s");
+  res.clearCookie("login", {signed: true});
+  res.clearCookie("s", {signed: true});
   res.redirect("https://www.pmpuns.com");
 }));
 

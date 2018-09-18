@@ -42,8 +42,7 @@ $(document).ready(function () {
 
   $("#logout").click((event) => {
     e.preventDefault();
-    $.post("/user/logout");
-    location = "/";
+    location.href = "/user/logout";
   })
 });
 

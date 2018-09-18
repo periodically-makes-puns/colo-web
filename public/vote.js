@@ -30,7 +30,7 @@ $(document).ready(() => {
     location.reload(true);
   });
   $(".curr").click((e) => {
-    location.href =  "/user/vote";
+    location.href = "/user/vote";
   })
   $(".prev").each(function (ind, ele) {
     $(this).click((e) => {
@@ -39,7 +39,7 @@ $(document).ready(() => {
   });
   $("#logout").click((e) => {
     e.preventDefault();
-    $.post("/user/logout");
+    location.href = "/user/logout";
   })
 });
 

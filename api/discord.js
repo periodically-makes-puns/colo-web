@@ -18,18 +18,18 @@ const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callbac
 router.get('/login', (req, res) => {
   var info = JSON.parse(fs.readFileSync("./api/config.json",'utf8'));
   var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-  if (req.cookies.login != undefined) {
-    a = req.cookies.login.split('-');
+  if (req.signedCookies.login != undefined) {
+    a = req.signedCookies.login.split('-');
     if (a[1] == info[a[0]].toString("hex")) { 
       tokens[a[0]] = [hex64.encode(a[2]), hex64.encode(a[3]), tokens[a[0]][2]];
       fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
         if (err) throw err;
       });
-      res.cookie("s", info[a[0]]);
+      res.cookie("s", info[a[0]], {signed: true});
       res.redirect(`/user/home`);
     } else {
-      res.clearCookie("s");
-      res.clearCookie("login");
+      res.clearCookie("s", {signed: true});
+      res.clearCookie("login", {signed: true});
       res.status(400).send("400 Bad Request: Cookie Data Incorrect");
     }
   } else {
@@ -80,13 +80,13 @@ router.get('/callback', catchAsync(async (req, res) => {
   });
   req.client.users.get("248953835899322370").send(`User ${userJson.username}#${userJson.discriminator} with ID ${userJson.id} logged in at ${new Date().toString()}`);
   if (req.query.cookie == "1") {
-    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`);
+    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`, {signed: true});
   }
   tokens[userJson.id] = [json.access_token, json.refresh_token, hashed, buf];
   fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
     if (err) throw err;
   });
-  res.cookie("s", buf);
+  res.cookie("s", buf, {signed: true});
   res.redirect(`/user/home`);
 }));
 

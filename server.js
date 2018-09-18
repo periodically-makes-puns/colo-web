@@ -116,6 +116,7 @@ const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
 // middleware
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser("secret"));
 app.use(cookieParser());
 app.use(morgan('common', {stream: accessLogStream}));
 app.use(helmet());

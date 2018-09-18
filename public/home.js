@@ -1,18 +1,21 @@
 /* jshint esversion: 6 */
 
 $(document).ready(() => {
-  $("#signup").click(() => {
+  $("#signup").click((e) => {
+    e.preventDefault();
     $.post('/user/signup'); 
     location.reload(true);
   });
-  $("#respond").click(() => {
+  $("#respond").click((e) => {
+    e.preventDefault();
     location.href='/user/respond';
   });
-  $("#vote").click(() => {
+  $("#vote").click((e) => {
+    e.preventDefault();
     location.href='/user/vote';
   });
-  $("#logout").click(() => {
+  $("#logout").click((e) => {
     e.preventDefault();
-    $.post("/user/logout");
+    location.href = "/user/logout";
   })
 });
