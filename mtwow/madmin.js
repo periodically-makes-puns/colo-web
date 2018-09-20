@@ -25,6 +25,8 @@ var editNumResps = data.prepare("UPDATE Contestants SET numResps = @numResps WHE
 var killContestant = data.prepare("DELETE FROM Contestants WHERE userid = @userid;");
 var removeResponse = data.prepare("DELETE FROM Votes WHERE id = @id;");
 var getAllResponses = data.prepare("SELECT * FROM Responses ORDER BY userid;");
+var editVoteNum = data.prepare("UPDATE Votes SET voteNum = @newVoteNum WHERE userid = @userid AND voteNum = @oldVoteNum;");
+var nonNullVoteCount = data.prepare("SELECT COUNT(*) FROM Votes WHERE vote IS NOT NULL AND userid = @userid;");
 
 var begin = data.prepare("BEGIN;");
 var commit = data.prepare("COMMIT;");
@@ -126,6 +128,21 @@ module.exports = async (client, msg) => {
           console.error(e);
           msg.channel.send("Failed.");
         }
+        break;
+      case "correctVoterData":
+        voters = data.prepare("SELECT userid FROM Voters;").all()
+        voters.forEach((val) => {
+          votes = getVotes.all({userid: val.userid});
+          vc = nonNullVoteCount.run({userid: val.userid})
+          for (i = 0; i < votes.length; i++) {
+            if (votes[i].voteNum != i + 1) {
+              editVoteNum.run({userid: val.userid, oldVoteNum: votes[i].voteNum, newVoteNum: i + 1});
+            }
+          }
+          if (val.voteCount != vc) {
+            editVoteCount.run({userid: val.userid, voteCount: vc});
+          }
+        });
         break;
       default:
         msg.channel.send("...that's not a command.");
