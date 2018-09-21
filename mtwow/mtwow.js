@@ -308,7 +308,7 @@ module.exports = (client, msg) => {
         } else {
           vseed = parseInt(args[3]) - 1;
           if (args[3]) {
-            if (isNaN(parseInt(args[3]))) {
+            if (isNaN(parseInt(args[3])) || parseInt(args[3]) > seeds.length) {
               msg.channel.send("That's no number, that's a String!")
               .then(msg => {sent = msg;})
               .catch(console.error);
