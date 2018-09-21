@@ -5,7 +5,7 @@ Maintained and run by PMPuns, [periodically-makes-puns](https://github.com/perio
 
 Have any questions? Contact me via Discord.
 
-Any issues? Open an issue via the [GitHub repository issues section](https://github.com/periodically-makes-puns/colo-web/issues), or contact me on Discord. 
+Any issues? Open an issue via the [GitHub repository issues section](https://github.com/periodically-makes-puns/colo-web/issues/new/choose), or contact me on Discord. 
 
 This bot is fully made in Node.js using Discord.js and Express.
 
