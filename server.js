@@ -3,20 +3,20 @@ const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 
 
-/*
+
 data.prepare("DROP TABLE IF EXISTS Status;").run();
 data.prepare("DROP TABLE IF EXISTS Contestants;").run();
 data.prepare("DROP TABLE IF EXISTS Voters;").run();
 data.prepare("DROP TABLE IF EXISTS Responses;").run();
 data.prepare("DROP TABLE IF EXISTS Votes;").run();
-data.prepare("CREATE TABLE IF NOT EXISTS Status (current string NOT NULL, prompt string);").run();
-data.prepare("INSERT INTO Status (current, prompt) VALUES ('responding', 'no u');").run();
-data.prepare("CREATE TABLE IF NOT EXISTS Contestants (userid text primary key, subResps integer, numResps integer);").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Status (timeleft integer, current string NOT NULL, prompt string);").run();
+data.prepare("INSERT INTO Status (current) VALUES ('nothing');").run();
+data.prepare("CREATE TABLE IF NOT EXISTS Contestants (userid text primary key, subResps integer, numResps integer, lives integer, spell integer);").run();
 data.prepare("CREATE TABLE IF NOT EXISTS Voters (userid text primary key, voteCount integer);").run();
 data.prepare("CREATE TABLE IF NOT EXISTS Responses (id integer primary key, userid text, respNum integer, response text, words integer);").run();
 data.prepare("CREATE TABLE IF NOT EXISTS Votes (id integer primary key, userid text, voteNum integer, seed text, vote text);").run();
 console.log("Done.");
-*/
+
 
 const fs = require("fs");
 const sgit = require("simple-git")();
@@ -41,6 +41,24 @@ var credentials = {key: privateKey, cert: certificate, requestCert: false, rejec
 const mtwow = require("./mtwow/mtwow.js");
 const madmin = require("./mtwow/madmin.js");
 const restart = require('proc-restart');
+
+const Ping = require('ping-lite');
+ 
+var ping = new Ping('www.pmpuns.com');
+ 
+setInterval(() => {
+  ping.send(function(err, ms) {
+    if (err) {
+      console.log("Error! Error! Error!");
+      console.error(err);
+      return;
+    }
+    currtime = new Date();
+    console.log(currtime.toString())
+    console.log('www.pmpuns.com responded in '+ms+'ms.');
+    client.channels.get("475115017876930560").send('www.pmpuns.com responded in '+ms+'ms.')
+  });
+}, 900000);
 
 
 

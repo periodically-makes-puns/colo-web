@@ -1,6 +1,9 @@
 /* jshint esversion: 6 */
+const Discord = require("discord.js");
+const fs = require("fs");
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
+const sgen = require("./screengen.js");
 var getStatus = data.prepare("SELECT current FROM Status;");
 var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid ORDER BY respNum;");
 var getContestantData = data.prepare("SELECT * FROM Contestants WHERE userid = @userid;");
@@ -14,7 +17,7 @@ var editVote = data.prepare("UPDATE Votes SET vote = @vote WHERE userid = @useri
 var editResponse = data.prepare("UPDATE Responses SET response = @response, words = @wc WHERE userid = @userid AND respNum = @respNum;");
 var editVoteCount = data.prepare("UPDATE Voters SET voteCount = @voteCount WHERE userid = @userid;");
 var editSubResps = data.prepare("UPDATE Contestants SET subResps = @subResps WHERE userid = @userid;");
-var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps) VALUES (@userid, @subResps, @numResps);");
+var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps, lives, spelllives) VALUES (@userid, @subResps, @numResps, 9, 0);");
 var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@userid, 0)");
 //admin only
 var changeStatus = data.prepare("UPDATE Status SET current = @status;");
@@ -25,8 +28,14 @@ var editNumResps = data.prepare("UPDATE Contestants SET numResps = @numResps WHE
 var killContestant = data.prepare("DELETE FROM Contestants WHERE userid = @userid;");
 var removeResponse = data.prepare("DELETE FROM Votes WHERE id = @id;");
 var getAllResponses = data.prepare("SELECT * FROM Responses ORDER BY userid;");
+var removeAllContestants = data.prepare("DELETE FROM Contestants;");
+var removeAllResponses = data.prepare("DELETE FROM Responses;");
+var removeAllVotes = data.prepare("DELETE FROM Votes;"); 
+var removeAllVoters = data.prepare("DELETE FROM Voters;");
 var editVoteNum = data.prepare("UPDATE Votes SET voteNum = @newVoteNum WHERE userid = @userid AND voteNum = @oldVoteNum;");
 var nonNullVoteCount = data.prepare("SELECT COUNT(*) FROM Votes WHERE vote IS NOT NULL AND userid = @userid;");
+var getAllVoters = data.prepare("SELECT * FROM Voters ORDER BY userid;");
+var getRespById = data.prepare("SELECT * FROM Responses WHERE id = @id;");
 
 var begin = data.prepare("BEGIN;");
 var commit = data.prepare("COMMIT;");
@@ -143,6 +152,145 @@ module.exports = async (client, msg) => {
             editVoteCount.run({userid: val.userid, voteCount: vc});
           }
         });
+        break;
+      case "getResults":
+        if (msg.channel.type != "dm" && msg.channel.id != "460585550676754452") {
+          msg.delete();
+          msg.channel.send("Oi, take this into DMs, please.")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          break;
+        }
+        numResps = data.prepare("SELECT COUNT(*) AS count FROM Responses;").get().count;
+        voters = getAllVoters.all();
+        ascores = new Array(numResps);
+        for (i = 0; i < numResps; i++) {
+          ascores[i] = [];
+        }
+        voters.forEach((val, ind, arr) => {
+          voterData = getVoterData.get({userid: val.userid});
+          if (!voterData || voterData.voteCount == 0) {
+            return;
+          }
+          votes = getVotes.all({userid: val.userid});
+          scores = new Array(numResps);
+          for (i = 0; i < numResps; i++) {
+            scores[i] = [];
+          }
+          
+          votes.forEach((val) => {
+            screen = sgen(val.seed, "internal");
+            if (val.vote) {
+              for (i = 0; i < val.vote.length; i++) {
+                try {
+                  scores[screen[val.vote.charCodeAt(i) - 65] - 1].push((val.vote.length - i - 1) / (val.vote.length - 1));
+                } catch (e) {
+                  console.log(val.seed);
+                  throw Error('HEfowiehgw');
+                }
+              }
+            }
+          });
+          scores.forEach((val, ind) => {
+            if (val.length != 0) { 
+              tot = val.reduce((prev, curr) => {
+                return prev + curr;
+              });
+            }
+            try {
+              tot /= val.length;
+              if (isNaN(tot) || tot == Infinity) {
+                tot = "NONE";
+              }
+            } catch (e) {
+              tot = "NONE";
+            }
+            if (tot != "NONE") {
+              ascores[ind].push(tot);
+            }
+          });
+        });
+        
+        console.log(ascores);
+        numResps = {};
+        rank = 1;
+        ascores.forEach((val, ind) => {
+          response = getRespById.get({id: ind + 1});
+          if (val.length != 0) { 
+            tot = val.reduce((prev, curr) => {
+              return prev + curr;
+            });
+            avg = tot / val.length;
+            stdevtot = val.reduce((prev, curr) => {
+              return prev + Math.pow(curr - avg, 2); 
+            }) / val.length;
+          }
+          try {
+            tot /= val.length;
+            if (isNaN(tot) || tot == Infinity) {
+              tot = "NONE";
+              console.log(val);
+              msg.channel.send("NO VOTES ON A RESPONSE! ABORT! ABORT!");
+              return;
+            }
+          } catch (e) {
+            tot = "NONE";
+          }
+          ascores[ind] = [ind, tot, stdevtot];
+        });
+        ascores.sort((a, b) => {
+          return (b[1] - a[1] != 0) ? b[1] - a[1] : b[2] - a[2];
+        });
+        ascores.forEach((val, ind, arr) => {
+          response = getRespById.get({id: val[0] + 1});
+          if (numResps.hasOwnProperty(response.userid)) {
+            numResps[response.userid]++;
+          } else {
+            numResps[response.userid] = 1;
+          }
+          if (numResps[response.userid] == 1) {
+            arg1 = 0;
+          } else {
+            arg1 = "-";
+          }
+          ascores[ind] = [arg1, client.users.get(response.userid).username + `[${numResps[response.userid]}]`, response.response, 3, 0, val[1], val[2], val.length];
+        });
+        ascores.forEach((val, ind, arr) => {
+          if (val[0] === 0) {
+            val[0] = rank;
+            rank++;
+          }
+          val[6] = (val[6] * 100).toFixed(2) + "%";
+          val[5] = (val[5] * 100).toFixed(2) + "%";
+          arr[ind] = val.join("\t");
+        });
+        otp = ascores.join("\n");
+        fs.writeFile("/home/pi/Documents/app-new/mtwow/results/results.tsv", otp, "utf8", (err) => {
+          if (err) {
+            msg.channel.send("Write failed!");
+            console.error(err);
+            throw Error("Write failed");
+          } else {
+            msg.channel.send("Here are the results:", {files: [{
+              attachment: 'mtwow/results/results.tsv',
+              name: 'results.tsv'
+           }]});
+          }
+        });
+        break;
+      case "nextRound":
+        removeAllResponses.run();
+        removeAllVotes.run();
+        removeAllVoters.run();
+        break;
+      case "clear":
+        removeAllContestants.run();
+        removeAllResponses.run();
+        removeAllVotes.run();
+        removeAllVoters.run();
         break;
       default:
         msg.channel.send("...that's not a command.");

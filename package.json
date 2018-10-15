@@ -23,6 +23,7 @@
     "morgan": "^1.9.1",
     "node-fetch": "^2.2.0",
     "node-gyp": "^3.8.0",
+    "ping-lite": "^1.0.2",
     "proc-restart": "^0.0.1",
     "random-js": "^1.0.8",
     "simple-git": "^1.96.0"

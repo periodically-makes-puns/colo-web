@@ -22,7 +22,7 @@ var editVote = data.prepare("UPDATE Votes SET vote = @vote WHERE userid = @useri
 var editResponse = data.prepare("UPDATE Responses SET response = @response, words = @wc WHERE userid = @userid AND respNum = @respNum;");
 var editVoteCount = data.prepare("UPDATE Voters SET voteCount = @voteCount WHERE userid = @userid;");
 var editSubResps = data.prepare("UPDATE Contestants SET subResps = @subResps WHERE userid = @userid;");
-var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps) VALUES (@userid, @subResps, @numResps);");
+var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps, lives, spell) VALUES (@userid, @subResps, @numResps, 9, 0);");
 var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@userid, 0)");
 var numContestants = data.prepare("SELECT count(*) FROM Contestants;");
 
@@ -509,6 +509,12 @@ module.exports = (client, msg) => {
         }
         out += "-".repeat(respMax + percMax + 3) + "\n```"
         msg.channel.send(out);
+        break;
+      case "website":
+        msg.channel.send("https://www.pmpuns.com");
+        break;
+      case "site":
+        msg.channel.send("https://www.pmpuns.com");
         break;
     }
     console.log(commit.run());
