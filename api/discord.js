@@ -10,31 +10,14 @@ const router = express.Router();
 const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 const CLIENT_ID = tcreds.id;
 const CLIENT_SECRET = tcreds.secret;
+var cookieSession = require('cookie-session')
 
 const redirect = encodeURIComponent('https://www.pmpuns.com/api/discord/callback');
 const redirect0 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=0');
 const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=1');
 
 router.get('/login', (req, res) => {
-  var info = JSON.parse(fs.readFileSync("./api/config.json",'utf8'));
-  var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-  if (req.signedCookies.login != undefined) {
-    a = req.signedCookies.login.split('-');
-    if (a[1] == info[a[0]].toString("hex")) { 
-      tokens[a[0]] = [hex64.encode(a[2]), hex64.encode(a[3]), tokens[a[0]][2]];
-      fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
-        if (err) throw err;
-      });
-      res.cookie("s", info[a[0]], {signed: true});
-      res.redirect(`/user/home`);
-    } else {
-      res.clearCookie("s", {signed: true});
-      res.clearCookie("login", {signed: true});
-      res.status(400).send("400 Bad Request: Cookie Data Incorrect");
-    }
-  } else {
-    res.redirect(`https://discordapp.com/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirect1}&response_type=code&scope=identify`);
-  }
+  
 });
 
 router.get('/callback', catchAsync(async (req, res) => {
@@ -50,12 +33,6 @@ router.get('/callback', catchAsync(async (req, res) => {
   }
   const code = req.query.code;
   const creds = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-  var red;
-  if (req.query.cookie == "1") {
-    red = redirect1;
-  } else {
-    red = redirect0;
-  }
   const response = await fetch(`https://discordapp.com/api/oauth2/token?grant_type=authorization_code&code=${code}&redirect_uri=${red}`, {
       method: 'POST',
       headers: {
@@ -70,23 +47,6 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
-  const buf = crypto.randomBytes(64).toString('hex');
-  var sha256 = crypto.createHash("SHA256");
-  sha256.update(userJson.id + buf, "ascii");
-  const hashed = sha256.digest("hex");
-  info[`${userJson.id}`] = buf;
-  fs.writeFile("./api/config.json", JSON.stringify(info), (err) => {
-    if (err) throw err;
-  });
-  req.client.users.get("248953835899322370").send(`User ${userJson.username}#${userJson.discriminator} with ID ${userJson.id} logged in at ${new Date().toString()}`);
-  if (req.query.cookie == "1") {
-    res.cookie("login", `${userJson.id}-${buf.toString('hex')}-${hex64.decode(json.access_token)}-${hex64.decode(json.refresh_token)}`, {signed: true});
-  }
-  tokens[userJson.id] = [json.access_token, json.refresh_token, hashed, buf];
-  fs.writeFileSync("./access.json", JSON.stringify(tokens), (err) => {
-    if (err) throw err;
-  });
-  res.cookie("s", buf, {signed: true});
   res.redirect(`/user/home`);
 }));
 

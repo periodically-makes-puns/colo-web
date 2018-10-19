@@ -4,6 +4,7 @@ const ejs = require("ejs");
 const fs = require("fs");
 const crypto = require("crypto");
 const router = new express.Router();
+var cookieSession = require('cookie-session')
 const {catchAsync} = require("./utils.js");
 const path = require("path");
 const sgen = require("./mtwow/screengen.js");
@@ -11,6 +12,7 @@ const Random = require("random-js");
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 var csrf = new SQLite("./csrf.sqlite");
+var cookieSession = require('cookie-session')
 
 var getStatus = data.prepare("SELECT current FROM Status;");
 var getResps = data.prepare("SELECT * FROM Responses WHERE userid = @userid ORDER BY respNum;");
@@ -46,6 +48,31 @@ function asTransaction(func) {
       if (data.inTransaction) rollback.run();
     }
   };
+}
+
+function rolecheck(client, contestantData) {
+  if (contestantData.subResps == contestantData.numResps) {
+    if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
+      client.guilds.get("439313069613514752").members.get(contestantData.userid).removeRole("481812129096138772");
+    }
+    if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812076050907146")) {
+      client.guilds.get("439313069613514752").members.get(contestantData.userid).removeRole("481812076050907146");
+    }
+  } else if (contestantData.subResps > 0) {
+    if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812076050907146")) {
+      client.guilds.get("439313069613514752").members.get(contestantData.userid).removeRole("481812076050907146");
+    }
+    if (!client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
+      client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481812129096138772");
+    }
+  } else {
+    if (!client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812076050907146")) {
+      client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481812076050907146");
+    }
+    if (!client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
+      client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481812129096138772");
+    }
+  }
 }
 
 const filter = (arr, func) => {
@@ -208,14 +235,9 @@ router.post("/signup", asTransaction((req, res, next) => {
   }
   let contestantData = getContestantData.get({userid: req.id});
   if (!contestantData) {
-    req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481831093964636161", "Signed up via website");
-    if (!req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812129096138772")) {
-      req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481812129096138772");
-    }
-    if (!req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812076050907146")) {
-      req.client.guilds.get("439313069613514752").members.get(req.id).addRole("481812076050907146");
-    }
     addContestant.run({userid: req.id, subResps: 0, numResps: 1});
+    contestantData = getContestantData.get({userid: req.id});
+    rolecheck(req.client, contestantData);
   }
   res.status(200).send("OK");
 }));
@@ -238,21 +260,11 @@ router.post("/respond", asTransaction((req, res, next) => {
       } else {
         addResponse.run({userid: req.id, respNum: i, response: req.body[`response${i}`], wc: req.body[`response${i}`].split(/\s+/g).length});
         editSubResps.run({userid: req.id, subResps: contestantData.subResps + 1});
+        contestantData.subResps++;
       }
     }
     contestantData = getContestantData.get({userid: req.id});
-    if (contestantData.subResps == contestantData.numResps) {
-      if (req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812129096138772")) {
-        req.client.guilds.get("439313069613514752").members.get(req.id).removeRole("481812129096138772");
-      }
-      if (req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812076050907146")) {
-        req.client.guilds.get("439313069613514752").members.get(req.id).removeRole("481812076050907146");
-      }
-    } else if (contestantData.subResps > 0) {
-      if (req.client.guilds.get("439313069613514752").members.get(req.id).roles.has("481812076050907146")) {
-        req.client.guilds.get("439313069613514752").members.get(req.id).removeRole("481812076050907146");
-      }
-    }
+    rolecheck(req.client, contestantData);
   }
   res.status(200).send("OK");
 }));

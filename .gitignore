@@ -10,3 +10,5 @@ protecc
 mtwow/mtwow.sqlite
 csrf.sqlite
 mtwow/results
+public/css
+public/js

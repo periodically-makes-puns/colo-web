@@ -3,7 +3,7 @@ const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
 
 
-
+/*
 data.prepare("DROP TABLE IF EXISTS Status;").run();
 data.prepare("DROP TABLE IF EXISTS Contestants;").run();
 data.prepare("DROP TABLE IF EXISTS Voters;").run();
@@ -16,7 +16,7 @@ data.prepare("CREATE TABLE IF NOT EXISTS Voters (userid text primary key, voteCo
 data.prepare("CREATE TABLE IF NOT EXISTS Responses (id integer primary key, userid text, respNum integer, response text, words integer);").run();
 data.prepare("CREATE TABLE IF NOT EXISTS Votes (id integer primary key, userid text, voteNum integer, seed text, vote text);").run();
 console.log("Done.");
-
+*/
 
 const fs = require("fs");
 const sgit = require("simple-git")();
@@ -56,6 +56,7 @@ setInterval(() => {
     currtime = new Date();
     console.log(currtime.toString())
     console.log('www.pmpuns.com responded in '+ms+'ms.');
+    client.channels.get("475115017876930560").send(currtime.toString())
     client.channels.get("475115017876930560").send('www.pmpuns.com responded in '+ms+'ms.')
   });
 }, 900000);
@@ -194,6 +195,7 @@ var httpServer = http.createServer(app);
 var httpsServer = https.createServer(credentials, app);
 
 client.on("ready", () => { // when bot is ready to go
+  client.user.setPresence({game: {name: "m^help for more details!", status: 'online'}});
   httpServer.listen(80);
   httpsServer.listen(443);
   console.log("Ready to go!");

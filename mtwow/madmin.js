@@ -17,7 +17,7 @@ var editVote = data.prepare("UPDATE Votes SET vote = @vote WHERE userid = @useri
 var editResponse = data.prepare("UPDATE Responses SET response = @response, words = @wc WHERE userid = @userid AND respNum = @respNum;");
 var editVoteCount = data.prepare("UPDATE Voters SET voteCount = @voteCount WHERE userid = @userid;");
 var editSubResps = data.prepare("UPDATE Contestants SET subResps = @subResps WHERE userid = @userid;");
-var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps, lives, spelllives) VALUES (@userid, @subResps, @numResps, 9, 0);");
+var addContestant = data.prepare("INSERT INTO Contestants (userid, subResps, numResps, lives, spell) VALUES (@userid, @subResps, @numResps, 9, 0);");
 var addVoter = data.prepare("INSERT INTO Voters (userid, voteCount) VALUES (@userid, 0)");
 //admin only
 var changeStatus = data.prepare("UPDATE Status SET current = @status;");
