@@ -313,6 +313,15 @@ module.exports = (client, msg) => {
           }, 10000);
           break;
         }
+        if(respNum < 1) {
+          msg.channel.send("Uh, you know that response number is less than one, right?")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          break;
+        }
         response = args.slice(3);
         resp = responses.findIndex((val) => {
           return val.respNum == respNum;
