@@ -43,6 +43,10 @@ const filter = (arr, func) => {
   return otp;
 };
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function rolecheck(client, contestantData) {
   if (contestantData.subResps == contestantData.numResps) {
     if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
@@ -68,8 +72,8 @@ function rolecheck(client, contestantData) {
   }
 }
 
-module.exports = (client, msg) => {
-  args = msg.content.split(/[\s]+/g);
+module.exports = async (client, msg) => {
+  args = msg.content.split(/[\^\s]+/g);
   log = client.channels.get("480897127262715924");
   clog = client.channels.get("502927473382653952");
   clog.send(`${msg.author.username} sent in ${(msg.channel.type == 'dm') ? "DMs" : 'channel with name ' + msg.channel.name}:\n\`\`\`${msg.content}\`\`\``);
@@ -77,7 +81,7 @@ module.exports = (client, msg) => {
   // args[0] is empty, args[1] has command, args[2]+ are arguments to the command
   try {
     switch (args[1]) {
-      case "m^help":
+      case "help":
 
         if (!args[2]) {
           otp = new Discord.RichEmbed()
@@ -141,7 +145,7 @@ module.exports = (client, msg) => {
               .addField("Usage", "m^vote **[vote]** *[vote number]*")
               .addField("Arguments", "vote: Your vote for the screen in question.\nvote number: Indicates the screen being voted on. If not given, defaults to current screen.")
               .addField("Effect", "User sends in vote [vote] for their screen number [vote number]")
-              .addField("Example", "m^help")
+              .addField("Example", "m^vote ABCDEFHIJG 1")
               .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
               .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
               break;
@@ -224,7 +228,7 @@ module.exports = (client, msg) => {
         }
         msg.channel.send({content: "Here ya go!", embed: otp});
         break;
-      case "m^signup":
+      case "signup":
         contestantData = getContestantData.get({userid: msg.author.id});
         if (getStatus.get().current != "signups" && getStatus.get().current != "responding") {
           msg.channel.send("Sorry, but you can't sign up right now. Maybe later?")
@@ -256,7 +260,7 @@ module.exports = (client, msg) => {
           }
         }
         break;
-      case "m^respond":
+      case "respond":
         contestantData = getContestantData.get({userid: msg.author.id});
         responses = getResps.all({userid: msg.author.id}) || [];
         if (getStatus.get().current != "responding") {
@@ -280,7 +284,8 @@ module.exports = (client, msg) => {
         }
         if (!contestantData) {
           addContestant.run({userid: msg.author.id, subResps: 0, numResps: 1});
-          client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481831093964636161");
+          client.guilds.get("439313069613514752").members.get(msg.author.id).addRole("481831093964636161");
+          log.send(`${msg.author.username} signed up! There are now ${numContestants.get()["count(*)"]} contestants!`);
           /*
           msg.channel.send("You're no contestant! Get out!")
           .then(msg => {sent = msg;})
@@ -296,7 +301,7 @@ module.exports = (client, msg) => {
         rolecheck(client, contestantData);
         respNum = parseInt(args[2]);
         if (isNaN(respNum)) {
-          msg.channel.send("That's no number, that's a String! [Your response number is probably missing.]")
+          msg.channel.send("That's no number, that's a String!")
           .then(msg => {sent = msg;})
           .catch(console.error);
           setTimeout(() => {
@@ -304,7 +309,7 @@ module.exports = (client, msg) => {
           }, 10000);
           break;
         }
-        if (respNum > contestantData.numResps) {
+        if (respNum > contestantData.numResps || respNum < 0) {
           msg.channel.send("You don't have that many responses!")
           .then(msg => {sent = msg;})
           .catch(console.error);
@@ -324,6 +329,7 @@ module.exports = (client, msg) => {
         } else {
           editResponse.run({userid: msg.author.id, respNum: respNum, response: response.join(" "), wc: response.length});
         }
+        console.log(contestantData);
         rolecheck(client, contestantData);
         inds = data.prepare("SELECT respNum FROM Responses WHERE userid = @userid;").all({userid: msg.author.id});
         inds.forEach((val, ind, arr) => {
@@ -332,7 +338,7 @@ module.exports = (client, msg) => {
         msg.channel.send(`Your response has been recorded. This is response index ${respNum}. You have sent ${contestantData.subResps} of your ${contestantData.numResps} responses. You have sent in responses with these indices: ${inds.join(", ")}.\n\nYour response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words.`);
         log.send(`${client.users.get(msg.author.id).username}'s response has been recorded. This is response index ${respNum}. They have sent ${contestantData.subResps} of their ${contestantData.numResps} responses. They have sent in responses with these indices: ${inds.join(", ")}.\n\nTheir response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words`)
         break;
-      case "m^vote":
+      case "vote":
         if (getStatus.get().current != "voting") {
           msg.channel.send("Sorry, but it's not yet voting time.")
           .then((msg) => {sent = msg;})
@@ -385,7 +391,7 @@ module.exports = (client, msg) => {
         } else {
           vseed = parseInt(args[3]) - 1;
           if (args[3]) {
-            if (isNaN(parseInt(args[3])) || parseInt(args[3]) > seeds.length) {
+            if (isNaN(parseInt(args[3])) || parseInt(args[3]) > seeds.length || parseInt(args[3]) < 1) {
               msg.channel.send("That's no number, that's a String!")
               .then(msg => {sent = msg;})
               .catch(console.error);
@@ -411,7 +417,7 @@ module.exports = (client, msg) => {
             return;
           }
           for (i = 0; i < args[2].length; i++) {
-            if ((args[2].charCodeAt(i) - 65 < 0) || (args[2].charCodeAt(i) - 65 > screen.length)) {
+            if ((args[2].charCodeAt(i) - 65 < 0) || (args[2].charCodeAt(i) - 65 >= screen.length)) {
               msg.channel.send("An invalid character has been detected in your vote.");
               return;
             } else if (used[args[2].charCodeAt(i) - 65]) {
@@ -443,11 +449,25 @@ module.exports = (client, msg) => {
           }
         }
         break;
-      case "m^screen":
-        seeds = getVoteSeeds({userid: msg.author.id});
+      case "screen":
+        if (msg.channel.type != 'dm') {
+          msg.delete();
+          msg.channel.send("Oi, take this into DMs, please.")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          break;
+        }
+        seeds = getVoteSeeds.all({userid: msg.author.id});
+        if (seeds.length == 0) {
+          msg.channel.send("You haven't requested a screen yet.");
+          break;
+        }
         if (args[2]) {
-          if (isNaN(parseInt(args[2]))) {
-            msg.channel.send("That's no number, that's a String!")
+          if (isNaN(parseInt(args[2])) || parseInt(args[2]) > seeds.length || parseInt(args[2]) < 1) {
+            msg.channel.send("Your screen number is invalid.")
             .then(msg => {sent = msg;})
             .catch(console.error);
             setTimeout(() => {
@@ -462,7 +482,7 @@ module.exports = (client, msg) => {
         }
         msg.channel.send(screen);
         break;
-      case "m^responseinfo":
+      case "responseinfo":
         if (msg.channel.type != "dm") {
           msg.delete();
           msg.channel.send("Oi, take this into DMs, please.")
@@ -499,7 +519,7 @@ module.exports = (client, msg) => {
         }
         msg.channel.send(otp);
         break;
-      case "m^votetracker":
+      case "votetracker":
         if (msg.channel.type != "dm") {
           msg.delete();
           msg.channel.send("Oi, take this into DMs, please.")
@@ -587,13 +607,13 @@ module.exports = (client, msg) => {
         out += "-".repeat(respMax + percMax + 3) + "\n```"
         msg.channel.send(out);
         break;
-      case "m^website":
+      case "website":
         msg.channel.send("https://www.pmpuns.com");
         break;
-      case "m^site":
+      case "site":
         msg.channel.send("https://www.pmpuns.com");
         break;
-      case "m^addresp":
+      case "addresp":
         contestantData = getContestantData.get({userid: msg.author.id});
         status = getStatus.get().current;
         if (status != "signups" && status != "responding") {
@@ -616,7 +636,7 @@ module.exports = (client, msg) => {
           msg.channel.send(`Done. You now have ${contestantData.numResps} responses and ${contestantData.lives - contestantData.spell - spent} lives.`);
         }
         break;
-      case "m^subresp":
+      case "subresp":
         contestantData = getContestantData.get({userid: msg.author.id});
         status = getStatus.get().current;
         if (status != "signups" && status != "responding") {
@@ -634,11 +654,7 @@ module.exports = (client, msg) => {
         }
         modSpell.run({userid: msg.author.id, spell: contestantData.spell - spent});
         modResponses.run({userid: msg.author.id, numResps: contestantData.numResps - 1});
-        response = data.prepare("SELECT * FROM Responses WHERE userid = @userid AND @numResps = numResps;").get({userid: userid, numResps: numResps});
-        if (response) {
-          deleteResponse.run({userid: msg.author.id, respNum: contestantData.numResps});
-          editSubResps.run({userid: userid, subResps: contestantData.subResps - 1});
-        }
+        deleteResponse.run({userid: msg.author.id, respNum: contestantData.numResps});
         msg.channel.send(`Done. You now have ${contestantData.numResps - 1} responses and ${contestantData.lives - contestantData.spell + spent} lives. Your response with number ${contestantData.numResps} was deleted.`);
         break;
     }

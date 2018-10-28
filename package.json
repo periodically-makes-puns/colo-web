@@ -28,6 +28,7 @@
     "node-fetch": "^2.2.0",
     "node-gyp": "^3.8.0",
     "ping-lite": "^1.0.2",
+    "pm2": "^3.2.2",
     "popper.js": "^1.14.4",
     "proc-restart": "^0.0.1",
     "random-js": "^1.0.8",

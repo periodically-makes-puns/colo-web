@@ -12,3 +12,6 @@ csrf.sqlite
 mtwow/results
 public/css
 public/js
+shellscripts
+err.log
+out.log

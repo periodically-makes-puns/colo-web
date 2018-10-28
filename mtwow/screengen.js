@@ -34,7 +34,7 @@ module.exports = (seed, type) => {
   if (seedargs[1] != undefined && seedargs[2] != undefined) {
     let need = getAnonSpecificResp.get({userid: seedargs[1], respNum: parseInt(seedargs[2])});
     out.push(need);
-    responses = getAnonAllRespsButOne.all({userid: seedargs[1], respNum: parseInt(seedargs[2])});
+    responses = getAnonAllRespsButSelf.all({userid: seedargs[1]});
     out = out.concat(Random.sample(mt, responses, Math.min(9, responses.length)));
     wseed += `-${seedargs[1]}-${seedargs[2]}`;
   } else if (seedargs[1] != undefined) {
@@ -46,7 +46,7 @@ module.exports = (seed, type) => {
   let otp;
   switch (type) {
     case "text":
-      otp = "```\n";
+      otp = "Prompt: **How do you kill the guard?**\nImage: https://cdn.discordapp.com/attachments/474394157583171584/482314380604604416/prompt_1.png\n```\n";
       let respMax = 0;
       let lenMax = 0;
       for (let i = 0; i < out.length; i++) {

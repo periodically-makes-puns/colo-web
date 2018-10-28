@@ -36,10 +36,43 @@ var editVoteNum = data.prepare("UPDATE Votes SET voteNum = @newVoteNum WHERE use
 var nonNullVoteCount = data.prepare("SELECT COUNT(*) FROM Votes WHERE vote IS NOT NULL AND userid = @userid;");
 var getAllVoters = data.prepare("SELECT * FROM Voters ORDER BY userid;");
 var getRespById = data.prepare("SELECT * FROM Responses WHERE id = @id;");
+var removeContestantResps = data.prepare("DELETE FROM Responses WHERE userid = @userid;");
+var editId = data.prepare("UPDATE Responses SET id = @newid WHERE id = @oldid;");
 
 var begin = data.prepare("BEGIN;");
 var commit = data.prepare("COMMIT;");
 var rollback = data.prepare("ROLLBACK;");
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+function rolecheck(client, contestantData) {
+  try {
+    if (contestantData.subResps == contestantData.numResps) {
+      if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
+        client.guilds.get("439313069613514752").members.get(contestantData.userid).removeRole("481812129096138772");
+      }
+      if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812076050907146")) {
+        client.guilds.get("439313069613514752").members.get(contestantData.userid).removeRole("481812076050907146");
+      }
+    } else if (contestantData.subResps > 0) {
+      if (client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812076050907146")) {
+        client.guilds.get("439313069613514752").members.get(contestantData.userid).removeRole("481812076050907146");
+      }
+      if (!client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
+        client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481812129096138772");
+      }
+    } else {
+      if (!client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812076050907146")) {
+        client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481812076050907146");
+      }
+      if (!client.guilds.get("439313069613514752").members.get(contestantData.userid).roles.has("481812129096138772")) {
+        client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481812129096138772");
+      }
+    }
+  } catch (e) {
+    client.channels.get("480897127262715924").send(`@PMPuns#5728 Weewoo! Contestant with ID ${contestantData.userid} not found!`);
+  }
+}
 
 module.exports = async (client, msg) => {
   begin.run();
@@ -74,7 +107,7 @@ module.exports = async (client, msg) => {
             if (contestants[i].subResps == 0) {
               client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} has DNPed. Revoking roles now.`);
               await contestant.removeRoles(["481812076050907146", "481812129096138772", "481831093964636161"]);
-              await contestant.addRole("481831151674327042");
+              // await contestant.addRole("481831151674327042");
               killContestant.run({userid: id});
             } else if (contestants[i].subResps < contestants[i].numResps) {
               client.channels.get("480897127262715924").send(`Contestant ${contestant.user.username} lost some responses. Revoking roles now.`);
@@ -96,23 +129,48 @@ module.exports = async (client, msg) => {
         break;
       case "listAllResps":
         resps = getAllResponses.all();
+        otp = ""
         resps.forEach((val, ind, arr) => {
-          msg.channel.send(`${client.users.get(val.userid).username} submitted \`\`${val.response}\`\` for response ${val.respNum}, which was counted as ${val.words} word${(val.words != 1) ? "s" : ""}.`); 
+          ne = `${client.users.get(val.userid).username} submitted \`\`${val.response}\`\` for response ${val.respNum}, which was counted as ${val.words} word${(val.words != 1) ? "s" : ""}.\n`
+          if (ne.length + otp.length > 2000) {
+            msg.channel.send(otp);
+            otp = "";
+          }
+          otp += ne;
         });
+        msg.channel.send(otp);
         break;
       case "listAllContestants":
         conts = getAllContestants.all();
+        otp = "";
         conts.forEach((val, ind, arr) => {
-          msg.channel.send(`${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.`);
+          ne = `${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.\n`
+          if (ne.length + otp.length > 2000) {
+            msg.channel.send(otp);
+            otp = "";
+          }
+          otp += ne;
         });
         break;
       case "correctContestantData":
         conts = getAllContestants.all();
+        otp = ""
         conts.forEach((val, ind, arr) => {
           resps = getResps.all({userid: val.userid}) || [];
           editSubResps.run({userid: val.userid, subResps: resps.length});
-          msg.channel.send(`Contestant ${client.users.get(val.userid).username}'s number of responses was corrected to ${resps.length}.`);
+          if (!client.users.get(val.userid)) {
+            msg.channel.send(`Weewoo! User with ID ${val.userid} not found!`);
+          } else {
+            rolecheck(client, val);
+            ne = `Contestant ${client.users.get(val.userid).username}'s number of responses was corrected to ${resps.length}.\n`
+            if (otp.length + ne.length > 2000) {
+              msg.channel.send(otp);
+              otp = "";
+            }
+            otp += ne;
+          }
         });
+        msg.channel.send(otp);
         break;
       case "listAllVotes":
         votes = getAllVotes.all();
@@ -173,7 +231,7 @@ module.exports = async (client, msg) => {
         voters.forEach((val, ind, arr) => {
           voterData = getVoterData.get({userid: val.userid});
           if (!voterData || voterData.voteCount == 0) {
-            return;
+            throw new Error("No votes.");
           }
           votes = getVotes.all({userid: val.userid});
           scores = new Array(numResps);
@@ -234,7 +292,7 @@ module.exports = async (client, msg) => {
               tot = "NONE";
               console.log(val);
               msg.channel.send("NO VOTES ON A RESPONSE! ABORT! ABORT!");
-              return;
+              throw new Error("No votes on a response!");
             }
           } catch (e) {
             tot = "NONE";
@@ -291,6 +349,118 @@ module.exports = async (client, msg) => {
         removeAllResponses.run();
         removeAllVotes.run();
         removeAllVoters.run();
+        break;
+      case "addContestant":
+        id = args[2];
+        contestantData = getContestantData.get({userid: id});
+
+        if (contestantData) {
+          msg.channel.send("Sorry, but you've already signed up!")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+        } else {
+          if (!client.users.get(id)) {
+            msg.channel.send("This user cannot be found. Aborting.");
+            break;
+          }
+          addContestant.run({userid: id, subResps: 0, numResps: 1});
+          contestantData = getContestantData.get({userid: id});
+          client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481831093964636161");
+          rolecheck(client, contestantData);
+          msg.channel.send("Signed up!")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          msg.channel.send(`Signed ${client.users.get(contestantData.userid).username} up!`)
+        }
+        break;
+      case "removeContestant":
+        id = args[2];
+        removeContestantResps.run({userid: id});
+        killContestant.run({userid: id});
+        msg.channel.send("Removed.");
+        break;
+      case "addResponse":
+        id = args[2];
+        contestantData = getContestantData.get({userid: id});
+        respNum = parseInt(args[3]);
+        resps = getResps.all({userid: id});
+        ind = resps.findIndex((val, ind, arr) => {
+          return val.respNum == respNum;
+        });
+        response = args.slice(4).join(" ");
+        wc = args.length - 4;
+        if (ind == -1) {
+          addResponse.run({userid: id, respNum: respNum, response: response, wc: wc});
+          editSubResps.run({userid: id, subResps: contestantData.subResps + 1});
+          contestantData.subResps++;
+        } else {
+          editResponse.run({userid: id, respNum: respNum, response: response, wc: wc});
+        }
+        rolecheck(client, contestantData);
+        msg.channel.send("Done.");
+        break;
+      case "remindIn":
+        subject = msg.content.split("``")[1];
+        time = args[2].split(":");
+        options = args[3].split(",");
+        otp = ""
+        if (options.indexOf("everyone") != -1) {
+          otp += "@everyone\n";
+        } else if (options.indexOf("here") != -1) {
+          otp += "@here\n";
+        }
+        switch (time.length) {
+          case 2:
+            days = 0;
+            hrs = parseInt(time[0]);
+            mins = parseInt(time[1]);
+            secs = 0;
+            break;
+          case 3:
+            days = 0;
+            hrs = parseInt(time[0]);
+            mins = parseInt(time[1]);
+            secs = parseInt(time[2]);
+            break;
+          case 4:
+            days = parseInt(time[0]);
+            hrs = parseInt(time[1]);
+            mins = parseInt(time[2]);
+            secs = parseInt(time[3]);
+            break;
+          default:
+            msg.channel.send("? I didn't understand that.");
+            break;
+        }
+        actual = days * 24 * 60 * 60 + hrs * 60 * 60 + mins * 60 + secs;
+        msg.channel.send(`Got it; Set your reminder to \`\`${subject}\`\` in ${days} days, ${hrs} hours, ${mins} minutes, and ${secs} seconds.`);
+        setTimeout(() => {
+          client.channels.get("502931534660239380").send(otp + `ALERT: \n\`\`\`${subject}\`\`\``);
+        }, actual * 1000);
+        break;
+      case "contestantinfo":
+        id = args[2];
+        contestantData = getContestantData.get({userid: id});
+        responses = getResps.all({userid: id});
+        if (!contestantData) {
+          msg.channel.send("Contestant not found.");
+          break;
+        }
+        msg.channel.send(JSON.stringify(contestantData));
+        msg.channel.send(JSON.stringify(responses));
+        break;
+      case "correctIds":
+        resps = data.prepare("SELECT * FROM Responses ORDER BY id;").all();
+        resps.forEach((val, ind, arr) => {
+          console.log(val.id);
+          editId.run({oldid: val.id, newid: ind + 1});
+        });
         break;
       default:
         msg.channel.send("...that's not a command.");

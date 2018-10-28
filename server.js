@@ -118,7 +118,7 @@ client.on("message", (msg) => { // on every message that gets sent
     msg.channel.send("You can't do that!");
   } else if (msg.content.startsWith("^")) {
     if (msg.content == "^") {
-      msg.channel.send("Yeah, I totally agree as well.");
+      // msg.channel.send("Yeah, I totally agree as well.");
     }
   } else if (msg.content.startsWith("m^")) {
     console.log(`${msg.author.username} ran a MINITWOW NORMAL type command.`);
