@@ -284,6 +284,7 @@ module.exports = async (client, msg) => {
             stdevtot = val.reduce((prev, curr) => {
               return prev + Math.pow(curr - avg, 2); 
             }) / val.length;
+            stdevtot = Math.sqrt(stdevtot);
           }
           try {
             tot /= val.length;
@@ -296,13 +297,14 @@ module.exports = async (client, msg) => {
           } catch (e) {
             tot = "NONE";
           }
-          ascores[ind] = [ind, tot, stdevtot];
+          ascores[ind] = [ind, tot, stdevtot, val.length];
         });
         ascores.sort((a, b) => {
           return (b[1] - a[1] != 0) ? b[1] - a[1] : b[2] - a[2];
         });
         ascores.forEach((val, ind, arr) => {
           response = getRespById.get({id: val[0] + 1});
+          contestant = getContestantData.get({id: val[0] + 1});
           if (numResps.hasOwnProperty(response.userid)) {
             numResps[response.userid]++;
           } else {
@@ -313,7 +315,8 @@ module.exports = async (client, msg) => {
           } else {
             arg1 = "-";
           }
-          ascores[ind] = [arg1, client.users.get(response.userid).username + `[${numResps[response.userid]}]`, response.response, 3, 0, val[1], val[2], val.length];
+          adder = (numResps[response.userid] == 1) ? "" : ` [${numResps[response.userid]}]`;
+          ascores[ind] = [arg1, client.users.get(response.userid).username + adder, response.response, contestant.lives, contestant.spell, val[1], val[2], val[3]];
         });
         ascores.forEach((val, ind, arr) => {
           if (val[0] === 0) {
