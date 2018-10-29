@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*jshint esversion: 6*/
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");

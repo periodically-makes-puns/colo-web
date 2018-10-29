@@ -231,7 +231,7 @@ module.exports = async (client, msg) => {
         voters.forEach((val, ind, arr) => {
           voterData = getVoterData.get({userid: val.userid});
           if (!voterData || voterData.voteCount == 0) {
-            throw new Error("No votes.");
+            return;
           }
           votes = getVotes.all({userid: val.userid});
           scores = new Array(numResps);
@@ -272,7 +272,6 @@ module.exports = async (client, msg) => {
           });
         });
         
-        console.log(ascores);
         numResps = {};
         rank = 1;
         ascores.forEach((val, ind) => {
@@ -326,7 +325,7 @@ module.exports = async (client, msg) => {
           arr[ind] = val.join("\t");
         });
         otp = ascores.join("\n");
-        fs.writeFile("/home/pi/Documents/app-new/mtwow/results/results.tsv", otp, "utf8", (err) => {
+        fs.writeFile("/home/webadmin/Documents/app-new/mtwow/results/results.tsv", otp, "utf8", (err) => {
           if (err) {
             msg.channel.send("Write failed!");
             console.error(err);

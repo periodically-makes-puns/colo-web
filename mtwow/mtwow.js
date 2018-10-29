@@ -89,7 +89,7 @@ module.exports = async (client, msg) => {
           .setColor(0X3DAEFF)
           .setTimestamp(new Date())
           .setFooter("Contact PMP#5728 for any and all issues.")
-          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** *[vote number]*\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite")
+          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** [vote number]\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite\nscreen [vote number]\nvoteinfo")
           .addField("Example", "m^help")
           .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
           .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
@@ -211,6 +211,19 @@ module.exports = async (client, msg) => {
               .addField("Arguments", "None.")
               .addField("Effect", "User obtains link to website. Site can be found at https://www.pmpuns.com.")
               .addField("Example", "m^site")
+              .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+              .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+              break;
+            case "voteinfo":
+              otp = new Discord.RichEmbed()
+              .setTitle("mTWOW VOTEINFO Command")
+              .setColor(0X3DAEFF)
+              .setTimestamp(new Date())
+              .setFooter("Contact PMP#5728 for any and all issues.")
+              .addField("Usage", "m^voteinfo")
+              .addField("Arguments", "None.")
+              .addField("Effect", "User receives summary of their vote seeds and letters.")
+              .addField("Example", "m^voteinfo")
               .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
               .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
               break;
@@ -399,21 +412,16 @@ module.exports = async (client, msg) => {
           msg.channel.send(`This is screen number ${voterData.voteCount+1}.\n\n${screen}\n\n`);
         } else {
           vseed = parseInt(args[3]) - 1;
-          if (args[3]) {
-            if (isNaN(parseInt(args[3])) || parseInt(args[3]) > seeds.length || parseInt(args[3]) < 1) {
-              msg.channel.send("That's no number, that's a String!")
-              .then(msg => {sent = msg;})
-              .catch(console.error);
-              setTimeout(() => {
-                sent.delete();
-              }, 10000);
-              break;
-            }
-            screen = sgen(seeds[parseInt(args[3]) - 1].seed, "internal");
-          } else {
-            screen = sgen(seeds[seeds.length - 1].seed, "internal");
-            vseed = seeds.length - 1;
+          if (isNaN(parseInt(args[3])) || parseInt(args[3]) > seeds.length || parseInt(args[3]) < 1) {
+            msg.channel.send("Your screen number is invalid. Mind checking that out?")
+            .then(msg => {sent = msg;})
+            .catch(console.error);
+            setTimeout(() => {
+              sent.delete();
+            }, 10000);
+            break;
           }
+          screen = sgen(seeds[parseInt(args[3]) - 1].seed, "internal");
 
           if (!args[2]) {
             msg.channel.send("Are you missing your vote? You need a vote.");
@@ -527,6 +535,38 @@ module.exports = async (client, msg) => {
           }
         }
         msg.channel.send(otp);
+        break;
+      case "voteinfo":
+        if (msg.channel.type != "dm") {
+          msg.delete();
+          msg.channel.send("Oi, take this into DMs, please.")
+          .then(msg => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          break;
+        }
+        voterData = getVoterData.get({userid: msg.author.id});
+        votes = getVotes.all({userid: msg.author.id});
+        if (votes.length == 0) {
+          msg.channel.send("Should probably request a screen before you come here, neh?");
+          break;
+        }
+        otp = "```\n";
+        maxlen = 0
+        for (i = 0; i < votes.length; i++) {
+          maxlen = Math.max(votes[i].seed.toString().length, maxlen);
+        }
+        votes.forEach((val, ind, arr) => {
+          ne = `${(ind + 1).toString().padStart(arr.length.toString().length, " ")}| Seed: ${val.seed.toString().padStart(maxlen, " ") } | Vote: ${val.vote}\n`;
+          if (otp.length + ne.length + "```".length > 2000) {
+            msg.channel.send(otp + "```");
+            otp = "```\n";
+          }
+          otp += ne;
+        });
+        msg.channel.send(otp + "```");
         break;
       case "votetracker":
         if (msg.channel.type != "dm") {
