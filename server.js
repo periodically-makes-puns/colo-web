@@ -38,7 +38,6 @@ const cred = JSON.parse(fs.readFileSync("./token.json", "utf-8"));
 const admins = ["262173579876106240", "248953835899322370"];
 var privateKey  = fs.readFileSync('./protecc/server.key', 'utf8');
 var certificate = fs.readFileSync('./protecc/server.crt', 'utf8');
-
 var credentials = {key: privateKey, cert: certificate, requestCert: false, rejectUnauthorized: false};
 const mtwow = require("./mtwow/mtwow.js");
 const madmin = require("./mtwow/madmin.js");
@@ -149,6 +148,10 @@ app.use(helmet.contentSecurityPolicy({
     scriptSrc: ["'self'", "'sha256-V5MGK9/CO7JvQzUHNNiGSkY2upVgeB0jGjzDUeKicl8='", "'sha256-Fi2rhYYy0MhXdVQgpTA1q0d2RyIsSP9Z69PjN85GiYg='", "'sha256-G7bcDiYmXiz83JPv7w1RK1CKFhJ38I0NutSnzhNmHMI='", "'sha256-0p7PxxIIvj4LCxwSZPKtMp1fOWhDvyYffGYgf56gSgI='"],
     connectSrc: ["'self'", "https://pmpuns.com"],
   },
+}));
+app.use(cookieSession({
+  name: "session",
+  secret: tcreds.csec,
 }));
 
 app.engine('html', ejs.renderFile);
