@@ -11,10 +11,16 @@ const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 const CLIENT_ID = tcreds.id;
 const CLIENT_SECRET = tcreds.secret;
 var cookieSession = require('cookie-session')
+const SECRET_KEY = tcreds.csec;
 
 const redirect = encodeURIComponent('https://www.pmpuns.com/api/discord/callback');
 const redirect0 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=0');
 const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=1');
+
+router.use(cookieSession({
+  name: "session",
+  secret: SECRET_KEY,
+}));
 
 router.get('/login', (req, res) => {
   
@@ -47,6 +53,9 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
+  req.session.id = userInfo.id;
+  req.session.access = json.access_token;
+  req.session.refresh = json.refresh_token;
   res.redirect(`/user/home`);
 }));
 
