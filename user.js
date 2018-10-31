@@ -88,48 +88,7 @@ const filter = (arr, func) => {
 router.use(express.static(path.join(__dirname, "public")));
 
 router.use("/", (req, res, next) => {
-  const data = fs.readFileSync("./access.json");
-  const json = JSON.parse(data);
-  var sha256 = crypto.createHash("SHA256");
-  if (!req.signedCookies.login) {
-    res.status(403).send("Authentication details incorrect");
-    return;
-  }
-  req.id = req.signedCookies.login.split("-")[0];
-  sha256.update(req.id + req.signedCookies.s, "ascii");
-  try {
-    let a = sha256.digest("hex");
-    if (a != json[req.id][2]) {
-      res.clearCookie("login", {signed: true});
-      res.clearCookie("s", {signed: true});
-      res.status(403).send("Authentication details incorrect");
-      return;
-    }
-  } catch (e) {
-    res.clearCookie("login", {signed: true});
-    res.clearCookie("s", {signed: true});
-    res.status(403).send("Authentication details incorrect");
-    return;
-  }
-  req.user = req.client.users.get(req.id);
-  if (!req.user) {
-    res.clearCookie("login", {signed: true});
-    res.clearCookie("s", {signed: true});
-    fs.readFile("./access.json", "utf-8", (err, data) => {
-      tokens = JSON.parse(data);
-      delete tokens[req.id];
-      fs.writeFile("./access.json", JSON.stringify(tokens), console.error);
-    });
-    fs.readFile("./api/config.json", "utf-8", (err, data) => {
-      a = JSON.parse(data);
-      delete a[req.id];
-      fs.writeFile("./api/config.json", JSON.stringify(a), console.error);
-    });
-    res.status(404).send("Not Found (psst you need to be on the server :D");
-    return;
-  } else {
-    // attach CSRF
-  }
+  req.id = req.session.id;
   next();
 });
 
