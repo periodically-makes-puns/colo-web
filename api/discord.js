@@ -17,10 +17,6 @@ const redirect = encodeURIComponent('https://www.pmpuns.com/api/discord/callback
 const redirect0 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=0');
 const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=1');
 const red = `https://discordapp.com/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&scope=identify&redirect_uri=${redirect1}`;
-router.use(cookieSession({
-  name: "session",
-  secret: SECRET_KEY,
-}));
 
 router.get('/login', (req, res) => {
   if (!req.session.isPopulated) res.redirect(red);
