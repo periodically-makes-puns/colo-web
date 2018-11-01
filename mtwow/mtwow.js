@@ -28,6 +28,8 @@ var numContestants = data.prepare("SELECT count(*) FROM Contestants;");
 var modResponses = data.prepare("UPDATE Contestants SET numResps = @numResps WHERE userid = @userid;");
 var modSpell = data.prepare("UPDATE Contestants SET spell = @spell WHERE userid = @userid;");
 var deleteResponse = data.prepare("DELETE FROM Responses WHERE userid = @userid AND respNum = @respNum;");
+var getRiskyGamble = data.prepare("SELECT riskyGamble FROM Contestants WHERE userid = @userid;");
+var setRiskyGamble = data.prepare("UPDATE Contestants SET riskyGamble = @riskyGamble WHERE userid = @userid;");
 var begin = data.prepare("BEGIN;");
 var commit = data.prepare("COMMIT;");
 var rollback = data.prepare("ROLLBACK;");
@@ -227,6 +229,19 @@ module.exports = async (client, msg) => {
               .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
               .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
               break;
+            case "bloodyGamble":
+              otp = new Discord.RichEmbed()
+              .setTitle("mTWOW BLOODYGAMBLE Command")
+              .setColor(0X3DAEFF)
+              .setTimestamp(new Date())
+              .setFooter("Contact PMP#5728 for any and all issues.")
+              .addField("Usage", "m^bloodyGamble [0/1]")
+              .addField("Arguments", "0 if you do not want to gamble, 1 if you do.")
+              .addField("Effect", "User increments their response count in return for losing lives.")
+              .addField("Example", "m^bloodyGamble 0\nm^bloodyGamble 1")
+              .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
+              .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
+              break;
             default:
               otp = new Discord.RichEmbed()
               .setTitle("mTWOW General Help")
@@ -243,8 +258,8 @@ module.exports = async (client, msg) => {
         break;
       case "signup":
         contestantData = getContestantData.get({userid: msg.author.id});
-        if (getStatus.get().current != "signups" && getStatus.get().current != "responding") {
-          msg.channel.send("Sorry, but you can't sign up right now. Maybe later?")
+        if (getStatus.get().current != "responding") {
+          msg.channel.send("Sorry, but you can't sign up right now.")
           .then(msg => {sent = msg;})
           .catch(console.error);
           setTimeout(() => {
@@ -259,6 +274,8 @@ module.exports = async (client, msg) => {
               sent.delete();
             }, 10000);
           } else {
+            msg.channel.send("Sorry, but you can't sign up now.");
+            /*
             addContestant.run({userid: msg.author.id, subResps: 0, numResps: 1});
             contestantData = getContestantData.get({userid: msg.author.id});
             client.guilds.get("439313069613514752").members.get(contestantData.userid).addRole("481831093964636161");
@@ -270,6 +287,7 @@ module.exports = async (client, msg) => {
               sent.delete();
             }, 10000);
             log.send(`${msg.author.username} signed up! There are now ${numContestants.get()["count(*)"]} contestants!`);
+            */
           }
         }
         break;
@@ -296,10 +314,11 @@ module.exports = async (client, msg) => {
           break;
         }
         if (!contestantData) {
+          /*
           addContestant.run({userid: msg.author.id, subResps: 0, numResps: 1});
           client.guilds.get("439313069613514752").members.get(msg.author.id).addRole("481831093964636161");
           log.send(`${msg.author.username} signed up! There are now ${numContestants.get()["count(*)"]} contestants!`);
-          /*
+          */
           msg.channel.send("You're no contestant! Get out!")
           .then(msg => {sent = msg;})
           .catch(console.error);
@@ -308,7 +327,7 @@ module.exports = async (client, msg) => {
             msg.delete();
           }, 10000);
           break;
-          */
+          
         }
         contestantData = getContestantData.get({userid: msg.author.id});
         rolecheck(client, contestantData);
@@ -668,12 +687,12 @@ module.exports = async (client, msg) => {
       case "addresp":
         contestantData = getContestantData.get({userid: msg.author.id});
         status = getStatus.get().current;
-        if (status != "signups" && status != "responding") {
+        if (status != "responding") {
           msg.channel.send("It is not currently time for this.");
           return;
         }
         if (!contestantData) {
-          msg.channel.send("You aren't signed up yet. Sign up first.");
+          msg.channel.send("You aren't a contestant.");
           return;
         }
         spent = 1;
@@ -691,23 +710,57 @@ module.exports = async (client, msg) => {
       case "subresp":
         contestantData = getContestantData.get({userid: msg.author.id});
         status = getStatus.get().current;
-        if (status != "signups" && status != "responding") {
+        if (status != "responding") {
           msg.channel.send("It is not currently time for this.");
-          return;
+          break;
         }
         if (!contestantData) {
-          msg.channel.send("You aren't signed up yet. Sign up first.");
-          return;
+          msg.channel.send("You aren't a contestant! Get out!");
+          break;
         }
         spent = 1;
         if (contestantData.numResps <= 1) {
           msg.channel.send("You can't send less than one response.");
-          return;
+          break;
         }
         modSpell.run({userid: msg.author.id, spell: contestantData.spell - spent});
         modResponses.run({userid: msg.author.id, numResps: contestantData.numResps - 1});
         deleteResponse.run({userid: msg.author.id, respNum: contestantData.numResps});
         msg.channel.send(`Done. You now have ${contestantData.numResps - 1} responses and ${contestantData.lives - contestantData.spell + spent} lives. Your response with number ${contestantData.numResps} was deleted.`);
+        break;
+      case "bloodyGamble":
+        contestantData = getContestantData.get({userid: msg.author.id});
+        status = getStatus.get().current;
+        if (status != "responding" && status != "voting") {
+          msg.channel.send("You can't do that right now.");
+          break;
+        }
+        if (!contestantData) {
+          msg.channel.send("You aren't a contestant.");
+          break;
+        }
+        if (args[2] == 1) {
+          if (contestantData.riskyGamble == 1) {
+            msg.channel.send("You've already enabled Bloody Gamble.");
+            break;
+          }
+          if (contestantData.lives - contestantData.spell < 2) {
+            msg.channel.send("You can't drop your lives below zero to gamble.");
+            break;
+          }
+          spent = 2;
+          modSpell.run({userid: msg.author.id, spell: contestantData.spell + spent});
+          setRiskyGamble.run({userid: msg.author.id, riskyGamble: 1});
+        } else if (args[2] == 0) {
+          if (contestant.riskyGamble == 0) {
+            msg.channel.send("You've already disabled Bloody Gamble.");
+            break;
+          }
+          modSpell.run({userid: msg.author.id, spell: contestantData.spell - 2});
+          setRiskyGamble.run({userid: msg.author.id, riskyGamble: 0});
+        } else {
+          msg.channel.send("Sorry, I didn't recognise that argument."); 
+        }
         break;
     }
     console.log(commit.run());
