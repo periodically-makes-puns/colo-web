@@ -16,3 +16,5 @@ shellscripts
 err.log
 out.log
 start.sh
+mtwow/scripter.js
+mtwow/backup.sqlite

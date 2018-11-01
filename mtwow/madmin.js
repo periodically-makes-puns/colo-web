@@ -38,7 +38,9 @@ var getAllVoters = data.prepare("SELECT * FROM Voters ORDER BY userid;");
 var getRespById = data.prepare("SELECT * FROM Responses WHERE id = @id;");
 var removeContestantResps = data.prepare("DELETE FROM Responses WHERE userid = @userid;");
 var editId = data.prepare("UPDATE Responses SET id = @newid WHERE id = @oldid;");
-
+var editLives = data.prepare("UPDATE Contestants SET lives = @lives WHERE userid = @userid;");
+var editSpell = data.prepare("UPDATE Contestants SET spell = @spell WHERE userid = @userid;");
+var delResps = data.prepare("UPDATE Contestants SET subResps = 0, numResps = 1, spell = 0, riskyGamble = 0;");
 var begin = data.prepare("BEGIN;");
 var commit = data.prepare("COMMIT;");
 var rollback = data.prepare("ROLLBACK;");
@@ -246,8 +248,7 @@ module.exports = async (client, msg) => {
                 try {
                   scores[screen[val.vote.charCodeAt(i) - 65] - 1].push((val.vote.length - i - 1) / (val.vote.length - 1));
                 } catch (e) {
-                  console.log(val.seed);
-                  throw Error('HEfowiehgw');
+                  console.error(e);
                 }
               }
             }
@@ -302,9 +303,11 @@ module.exports = async (client, msg) => {
         ascores.sort((a, b) => {
           return (b[1] - a[1] != 0) ? b[1] - a[1] : b[2] - a[2];
         });
+        var cont = 0;
         ascores.forEach((val, ind, arr) => {
+          
           response = getRespById.get({id: val[0] + 1});
-          contestant = getContestantData.get({id: val[0] + 1});
+          contestant = getContestantData.get({userid: response.userid});
           if (numResps.hasOwnProperty(response.userid)) {
             numResps[response.userid]++;
           } else {
@@ -312,17 +315,37 @@ module.exports = async (client, msg) => {
           }
           if (numResps[response.userid] == 1) {
             arg1 = 0;
+            cont++;
           } else {
             arg1 = "-";
           }
           adder = (numResps[response.userid] == 1) ? "" : ` [${numResps[response.userid]}]`;
-          ascores[ind] = [arg1, client.users.get(response.userid).username + adder, response.response, contestant.lives, contestant.spell, val[1], val[2], val[3]];
+          ascores[ind] = [response.userid, arg1, client.users.get(response.userid).username + adder, response.response, contestant.lives, contestant.spell, val[1], val[2], val[3]];
         });
         ascores.forEach((val, ind, arr) => {
-          if (val[0] === 0) {
-            val[0] = rank;
+          if (val[1] === 0) {
+            val[1] = rank;
             rank++;
+            try {
+              contestantData = getContestantData.get({userid: val[0]});
+              lives = contestantData.lives;
+              nr = (cont - rank + 1) / (cont - 1);
+              ll = 0;
+              bg = 1 - contestantData.riskyGamble;
+              if (nr >= 0.9) {ll--;} else {bg = 1;}
+              if (nr <= 0.5) {ll++;}
+              if (nr <= 0.2) {ll+=2;}
+              if (val[6] <= 0.3) {ll+=3;}
+              editLives.run({userid: val[0], lives: (contestantData.lives - ll - bg * contestantData.spell > 9) ? 9 : contestantData.lives - ll - bg * contestantData.spell});
+              editSpell.run({userid: val[0], spell: 0});
+              if (contestantData.lives - ll - bg * contestantData.spell < 0) {
+                killContestant.run({userid: val[0]});
+              }
+            } catch (e) {
+              console.log(val[0]);
+            }
           }
+          val.shift();
           val[6] = (val[6] * 100).toFixed(2) + "%";
           val[5] = (val[5] * 100).toFixed(2) + "%";
           arr[ind] = val.join("\t");
@@ -345,6 +368,7 @@ module.exports = async (client, msg) => {
         removeAllResponses.run();
         removeAllVotes.run();
         removeAllVoters.run();
+        delResps.run();
         break;
       case "clear":
         removeAllContestants.run();

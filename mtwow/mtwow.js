@@ -458,6 +458,9 @@ module.exports = async (client, msg) => {
                 gseed = `${seed}`;
               }
             } else {
+	      mt.autoSeed();
+	      seed = Random.integer(1, 11881376)(mt);
+	      mt.seed(seed);
               gseed = `${seed}`;
             }
             screen = sgen(gseed, "text");

@@ -16,9 +16,7 @@ var getAnonAllRespsButSelf = data.prepare("SELECT id, response, words FROM Respo
 
 
 module.exports = (seed, type) => {
-  if (getStatus.get().current != "voting") {
-    return;
-  }
+
   let seedargs;
   try {
     seedargs = seed.split("-");
