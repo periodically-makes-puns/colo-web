@@ -91,7 +91,7 @@ module.exports = async (client, msg) => {
           .setColor(0X3DAEFF)
           .setTimestamp(new Date())
           .setFooter("Contact PMP#5728 for any and all issues.")
-          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** [vote number]\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite\nscreen [vote number]\nvoteinfo")
+          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** [vote number]\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite\nscreen [vote number]\nvoteinfo\nriskyGamble [0/1]")
           .addField("Example", "m^help")
           .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
           .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
@@ -248,7 +248,7 @@ module.exports = async (client, msg) => {
               .setColor(0X3DAEFF)
               .setTimestamp(new Date())
               .setFooter("Contact PMP#5728 for any and all issues.")
-              .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** *[vote number]*\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite")
+              .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** [vote number]\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite\nscreen [vote number]\nvoteinfo\nriskyGamble [0/1]")
               .addField("Example", "m^help")
               .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
               .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
