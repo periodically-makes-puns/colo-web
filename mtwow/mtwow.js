@@ -294,8 +294,10 @@ module.exports = async (client, msg) => {
       case "respond":
         contestantData = getContestantData.get({userid: msg.author.id});
         responses = getResps.all({userid: msg.author.id}) || [];
-        if (getStatus.get().current != "responding") {
-          msg.channel.send("Not time to respond yet.")
+        
+        if (msg.channel.type != "dm") {
+          msg.delete();
+          msg.channel.send("Oi, take this into DMs, please.")
           .then(msg => {sent = msg;})
           .catch(console.error);
           setTimeout(() => {
@@ -303,9 +305,8 @@ module.exports = async (client, msg) => {
           }, 10000);
           break;
         }
-        if (msg.channel.type != "dm") {
-          msg.delete();
-          msg.channel.send("Oi, take this into DMs, please.")
+        if (getStatus.get().current != "responding") {
+          msg.channel.send("Not time to respond yet.")
           .then(msg => {sent = msg;})
           .catch(console.error);
           setTimeout(() => {
