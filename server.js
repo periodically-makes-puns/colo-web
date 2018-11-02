@@ -34,6 +34,9 @@ const bodyParser = require("body-parser");
 const client = new Discord.Client();
 const helmet = require("helmet");
 const app = express();
+const proxy = require("http-proxy");
+var proxyServer = proxy.createProxyServer();
+
 const cred = JSON.parse(fs.readFileSync("./token.json", "utf-8"));
 const admins = ["262173579876106240", "248953835899322370"];
 var privateKey  = fs.readFileSync('./protecc/server.key', 'utf8');
@@ -170,6 +173,9 @@ app.use((req, res, next) => {
   next();
 }); 
 // 
+app.get('/shell', (req, res) => {
+  proxyServer.web(req, res, "https://localhost:10683");
+});
 app.get('/', (req, res) => {
   res.redirect("/api/discord/login?cookie=1");
 });
