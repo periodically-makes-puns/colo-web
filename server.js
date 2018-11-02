@@ -174,7 +174,7 @@ app.use((req, res, next) => {
 }); 
 // 
 app.get('/shell', (req, res) => {
-  proxyServer.web(req, res, "https://localhost:10683");
+  proxyServer.web(req, res, {target: "https://localhost:10683"});
 });
 app.get('/', (req, res) => {
   res.redirect("/api/discord/login?cookie=1");

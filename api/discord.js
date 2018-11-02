@@ -19,17 +19,19 @@ const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callbac
 const red = `https://discordapp.com/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&scope=identify&redirect_uri=${redirect1}`;
 
 router.get('/login', (req, res) => {
-  if (!req.session.isPopulated) res.redirect(red);
-  var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-  var args = "";
-  if (!tokens.hasOwnProperty(req.session.id)) res.redirect(red);
-  else if (tokens[req.session.id]) {
-    args = tokens.split("-");
-    req.session.access = tokens[1];
-    req.session.refresh = tokens[2];
-  } else {
-    req.session = null;
-    res.redirect(red);
+  if (!req.session.isPopulated) res.redirect(red);  
+  else {
+    var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
+    var args = "";
+    if (!tokens.hasOwnProperty(req.session.id)) res.redirect(red);
+    else if (tokens[req.session.id]) {
+      args = tokens.split("-");
+      req.session.access = tokens[1];
+      req.session.refresh = tokens[2];
+    } else {
+      req.session = null;
+      res.redirect(red);
+    }
   }
 });
 
@@ -55,10 +57,10 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
-  req.session.id = userInfo.id;
+  req.session.id = userJson.id;
   req.session.access = json.access_token;
   req.session.refresh = json.refresh_token;
-  tokens[id] = `${userInfo.id}-${json.access_token}-${json.refresh_token}`;
+  tokens[userInfo.id] = `${userJson.id}-${json.access_token}-${json.refresh_token}`;
   
   res.redirect(`/user/home`);
 }));

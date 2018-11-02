@@ -18,3 +18,5 @@ out.log
 start.sh
 mtwow/scripter.js
 mtwow/backup.sqlite
+certificate.pem
+certificate-localhost.pem

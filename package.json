@@ -23,6 +23,7 @@
     "express": "^4.16.3",
     "helmet": "^3.13.0",
     "hex64": "^0.4.0",
+    "http-proxy": "^1.17.0",
     "jquery": "^3.3.1",
     "morgan": "^1.9.1",
     "node-fetch": "^2.2.0",

@@ -89,6 +89,7 @@ router.use(express.static(path.join(__dirname, "public")));
 
 router.use("/", (req, res, next) => {
   req.id = req.session.id;
+  console.log("session " + JSON.stringify(req.session));
   if (req.id != "248953835899322370") {
     res.status(404).send("Authentication failed.");
   } else {
