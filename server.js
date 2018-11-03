@@ -35,7 +35,9 @@ const client = new Discord.Client();
 const helmet = require("helmet");
 const app = express();
 const proxy = require("http-proxy");
-var proxyServer = proxy.createProxyServer();
+var proxyServer = proxy.createProxyServer({
+  secure: false,
+});
 
 const cred = JSON.parse(fs.readFileSync("./token.json", "utf-8"));
 const admins = ["262173579876106240", "248953835899322370"];
@@ -172,10 +174,15 @@ app.use((req, res, next) => {
   req.client.channels.get("475115017876930560").send("```http\n" + lines[lines.length-2] + "\n```");
   next();
 }); 
-// 
-app.get('/shell', (req, res) => {
+var SECRET_URL = tcreds.surl;
+
+app.get('/' + SECRET_URL, (req, res) => {
   proxyServer.web(req, res, {target: "https://localhost:10683"});
 });
+app.get('/ShellInABox.js', (req, res) => {
+  proxyServer.web(req, res, {target: "https://localhost:10683"});
+})
+
 app.get('/', (req, res) => {
   res.redirect("/api/discord/login?cookie=1");
 });
@@ -198,6 +205,10 @@ app.use((err, req, res, next) => {
         error: err.message,
       });
   }
+});
+
+proxyServer.on('error', function(e) {
+  console.error(e);
 });
 
 client.login(tcreds.token);

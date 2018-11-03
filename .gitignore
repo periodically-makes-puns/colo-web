@@ -21,3 +21,5 @@ mtwow/backup.sqlite
 certificate.pem
 certificate-localhost.pem
 certificate-www.pmpuns.com.pem
+.gitignore
+public/shell_in_a_box.js

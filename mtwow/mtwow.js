@@ -371,7 +371,6 @@ module.exports = async (client, msg) => {
         } else {
           editResponse.run({userid: msg.author.id, respNum: respNum, response: response.join(" "), wc: response.length});
         }
-        console.log(contestantData);
         rolecheck(client, contestantData);
         inds = data.prepare("SELECT respNum FROM Responses WHERE userid = @userid;").all({userid: msg.author.id});
         inds.forEach((val, ind, arr) => {
