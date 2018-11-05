@@ -44,7 +44,7 @@ module.exports = (seed, type) => {
   let otp;
   switch (type) {
     case "text":
-      otp = "Prompt: **How do you kill the guard?**\nImage: https://cdn.discordapp.com/attachments/474394157583171584/482314380604604416/prompt_1.png\n```\n";
+      otp = "Prompt: **How do you stop the burning pain in your arm?\nFull Message: <https://discordapp.com/channels/439313069613514752/474394157583171584/507426992811933697>**\n```\n";
       let respMax = 0;
       let lenMax = 0;
       for (let i = 0; i < out.length; i++) {

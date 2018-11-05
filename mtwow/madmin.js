@@ -146,13 +146,19 @@ module.exports = async (client, msg) => {
         conts = getAllContestants.all();
         otp = "";
         conts.forEach((val, ind, arr) => {
-          ne = `${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.\n`
+          if (!client.users.get(val.userid)) {
+            ne = `User with ID ${val.userid} was not found!`;
+            return;
+          } else {
+            ne = `${client.users.get(val.userid).username}: ${val.subResps} of ${val.numResps}.\n`
+          }
           if (ne.length + otp.length > 2000) {
             msg.channel.send(otp);
             otp = "";
           }
           otp += ne;
         });
+        msg.channel.send(otp);
         break;
       case "correctContestantData":
         conts = getAllContestants.all();

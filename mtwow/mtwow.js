@@ -91,7 +91,7 @@ module.exports = async (client, msg) => {
           .setColor(0X3DAEFF)
           .setTimestamp(new Date())
           .setFooter("Contact PMP#5728 for any and all issues.")
-          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote **[vote]** [vote number]\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite\nscreen [vote number]\nvoteinfo\nriskyGamble [0/1]")
+          .addField("Commands", "help *[command]*\nsignup\nrespond [response number] [response]\nvote [vote number] **[vote]**\nresponseinfo\nvotetracker\naddresp\nsubresp\nsite\nscreen [vote number]\nvoteinfo\nbloodyGamble [0/1]")
           .addField("Example", "m^help")
           .addField("Notation", "Brackets mean arguments.\nItalicised arguments mean optional.\nBolded arguments mean required except for first time.")
           .addField("Prefixes", "User prefixes are always ^ or m^, with m^ being mTWOW commands.\nAdmin prefixes are always & or m& with m& being mTWOW admin commands.");
@@ -144,7 +144,7 @@ module.exports = async (client, msg) => {
               .setColor(0X3DAEFF)
               .setTimestamp(new Date())
               .setFooter("Contact PMP#5728 for any and all issues.")
-              .addField("Usage", "m^vote **[vote]** *[vote number]*")
+              .addField("Usage", "m^vote [vote number] **[vote]**")
               .addField("Arguments", "vote: Your vote for the screen in question.\nvote number: Indicates the screen being voted on. If not given, defaults to current screen.")
               .addField("Effect", "User sends in vote [vote] for their screen number [vote number]")
               .addField("Example", "m^vote ABCDEFHIJG 1")
@@ -380,15 +380,6 @@ module.exports = async (client, msg) => {
         log.send(`${client.users.get(msg.author.id).username}'s response has been recorded. This is response index ${respNum}. They have sent ${contestantData.subResps} of their ${contestantData.numResps} responses. They have sent in responses with these indices: ${inds.join(", ")}.\n\nTheir response was recorded as:\n\n${response.join(" ")}\n\nIt will be counted as ${response.length} words`)
         break;
       case "vote":
-        if (getStatus.get().current != "voting") {
-          msg.channel.send("Sorry, but it's not yet voting time.")
-          .then((msg) => {sent = msg;})
-          .catch(console.error);
-          setTimeout(() => {
-            sent.delete();
-          }, 10000);
-          break;
-        }
         if (msg.channel.type != "dm") {
           msg.delete();
           msg.channel.send("Oi, take this into DMs, please.")
@@ -399,6 +390,18 @@ module.exports = async (client, msg) => {
           }, 10000);
           break;
         }
+        if (getStatus.get().current != "voting") {
+          msg.channel.send("Sorry, but it's not yet voting time.")
+          .then((msg) => {sent = msg;})
+          .catch(console.error);
+          setTimeout(() => {
+            sent.delete();
+          }, 10000);
+          break;
+        }
+        place = args[3]
+        args[3] = args[2]
+        args[2] = place 
         var screen;
         voterData = getVoterData.get({userid: msg.author.id});
         contestantData = getContestantData.get({userid: msg.author.id});
@@ -418,15 +421,13 @@ module.exports = async (client, msg) => {
             if (voterData.voteCount < contestantData.subResps) {
               voterData = getVoterData.get({userid: msg.author.id});
               gseed = `${seed}-${msg.author.id}-${voterData.voteCount+1}`;
-              screen = sgen(gseed, "text");
             } else {
-              gseed = `${seed}`;
-              screen = sgen(gseed, "text");
+              gseed = `${seed}-${msg.author.id}`;
             }
           } else {
             gseed = `${seed}`;
-            screen = sgen(gseed, "text");
           }
+          screen = sgen(gseed, "text");
           addVoteSeed.run({userid: msg.author.id, voteNum: voterData.voteCount+1, seed: gseed});
           msg.channel.send(`This is screen number ${voterData.voteCount+1}.\n\n${screen}\n\n`);
         } else {
@@ -467,19 +468,16 @@ module.exports = async (client, msg) => {
           if (vseed == seeds.length - 1) {
             let gseed;
             editVoteCount.run({userid: msg.author.id, voteCount: voterData.voteCount + 1});
+            mt.autoSeed();
+            seed = Random.integer(1, 11881376)(mt);
+            mt.seed(seed);
             if (contestantData) {
-              mt.autoSeed();
-              seed = Random.integer(1, 11881376)(mt);
-              mt.seed(seed);
               if (voterData.voteCount + 1 < contestantData.subResps) {
                 gseed = `${seed}-${msg.author.id}-${voterData.voteCount + 2}`;
               } else {
-                gseed = `${seed}`;
+                gseed = `${seed}-${msg.author.id}`;
               }
             } else {
-	      mt.autoSeed();
-	      seed = Random.integer(1, 11881376)(mt);
-	      mt.seed(seed);
               gseed = `${seed}`;
             }
             screen = sgen(gseed, "text");
@@ -751,15 +749,25 @@ module.exports = async (client, msg) => {
           spent = 2;
           modSpell.run({userid: msg.author.id, spell: contestantData.spell + spent});
           setRiskyGamble.run({userid: msg.author.id, riskyGamble: 1});
+          msg.channel.send("Bloody Gamble has been enabled.");
         } else if (args[2] == 0) {
-          if (contestant.riskyGamble == 0) {
+          if (contestantData.riskyGamble == 0) {
             msg.channel.send("You've already disabled Bloody Gamble.");
             break;
           }
           modSpell.run({userid: msg.author.id, spell: contestantData.spell - 2});
           setRiskyGamble.run({userid: msg.author.id, riskyGamble: 0});
+          msg.channel.send("Bloody Gamble has been disabled.");
         } else {
-          msg.channel.send("Sorry, I didn't recognise that argument."); 
+          if (contestantData.riskyGamble == 0) {
+            modSpell.run({userid: msg.author.id, spell: contestantData.spell + spent});
+            setRiskyGamble.run({userid: msg.author.id, riskyGamble: 1});
+            msg.channel.send("Bloody Gamble has been enabled.");
+          } else {
+            modSpell.run({userid: msg.author.id, spell: contestantData.spell - 2});
+            setRiskyGamble.run({userid: msg.author.id, riskyGamble: 0});
+            msg.channel.send("Bloody Gamble has been disabled.");
+          }
         }
         break;
     }

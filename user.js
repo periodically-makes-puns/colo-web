@@ -87,8 +87,9 @@ const filter = (arr, func) => {
 
 router.use(express.static(path.join(__dirname, "public")));
 
-router.use("/", (req, res, next) => {
+router.use((req, res, next) => {
   req.id = req.session.id;
+  req.user = req.client.users.get(req.id);
   console.log("session " + JSON.stringify(req.session));
   if (req.id != "248953835899322370") {
     res.status(404).send("Authentication failed.");
@@ -193,7 +194,7 @@ router.get("/vote", asTransaction((req, res, next) => {
 }));
 
 router.post("/signup", asTransaction((req, res, next) => {
-  if (getStatus.get().current != "signups" && getStatus.get().current != "responding") {
+  if (getStatus.get().current != "signups") {
     res.status(400);
     return;
   }

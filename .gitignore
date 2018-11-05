@@ -4,7 +4,6 @@ package-lock.json
 token.json
 access.json
 mtwow/mtwow.json
-.gitattributes
 access.log
 protecc
 mtwow/mtwow.sqlite
@@ -21,5 +20,4 @@ mtwow/backup.sqlite
 certificate.pem
 certificate-localhost.pem
 certificate-www.pmpuns.com.pem
-.gitignore
-public/shell_in_a_box.js
+public/ShellInABox.js

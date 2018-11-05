@@ -150,13 +150,16 @@ app.use(helmet.contentSecurityPolicy({
     defaultSrc: ["'self'"],
     styleSrc: ["'self'", "'unsafe-inline'"],
     imgSrc: ["'self'", "data:"],
-    scriptSrc: ["'self'", "'sha256-V5MGK9/CO7JvQzUHNNiGSkY2upVgeB0jGjzDUeKicl8='", "'sha256-Fi2rhYYy0MhXdVQgpTA1q0d2RyIsSP9Z69PjN85GiYg='", "'sha256-G7bcDiYmXiz83JPv7w1RK1CKFhJ38I0NutSnzhNmHMI='", "'sha256-0p7PxxIIvj4LCxwSZPKtMp1fOWhDvyYffGYgf56gSgI='"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "https://localhost:10683", "'unsafe-eval'"],
     connectSrc: ["'self'", "https://pmpuns.com"],
   },
 }));
+app.set("trust proxy", 1);
 app.use(cookieSession({
   name: "session",
   secret: tcreds.csec,
+  secure: true,
+  httpOnly: true,
 }));
 
 app.engine('html', ejs.renderFile);
@@ -168,20 +171,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  var readLog = fs.readFileSync("./access.log", "utf8");
-  var lines = readLog.split("\n");
-  req.client.channels.get("475115017876930560").send("```http\n" + lines[lines.length-2] + "\n```");
-  next();
-}); 
 var SECRET_URL = tcreds.surl;
 
-app.get('/' + SECRET_URL, (req, res) => {
-  proxyServer.web(req, res, {target: "https://localhost:10683"});
+app.all('/' + SECRET_URL + "/*", (req, res) => {
+  proxyServer.web(req, res, {target: "https://192.168.1.3:10683"});
 });
-app.get('/ShellInABox.js', (req, res) => {
-  proxyServer.web(req, res, {target: "https://localhost:10683"});
-})
 
 app.get('/', (req, res) => {
   res.redirect("/api/discord/login?cookie=1");

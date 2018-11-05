@@ -14,20 +14,21 @@ var cookieSession = require('cookie-session')
 const SECRET_KEY = tcreds.csec;
 
 const redirect = encodeURIComponent('https://www.pmpuns.com/api/discord/callback');
-const redirect0 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=0');
-const redirect1 = encodeURIComponent('https://www.pmpuns.com/api/discord/callback?cookie=1');
-const red = `https://discordapp.com/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&scope=identify&redirect_uri=${redirect1}`;
+const red = `https://discordapp.com/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&scope=identify&redirect_uri=${redirect}`;
 
 router.get('/login', (req, res) => {
   if (!req.session.isPopulated) res.redirect(red);  
   else {
     var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-    var args = "";
+    console.log(tokens[req.session.id]);
+    console.log(req.session.id);
     if (!tokens.hasOwnProperty(req.session.id)) res.redirect(red);
     else if (tokens[req.session.id]) {
-      args = tokens.split("-");
+      console.log("huh");
+      args = tokens[req.session.id].split("-");
       req.session.access = tokens[1];
       req.session.refresh = tokens[2];
+      res.redirect("/user/home");
     } else {
       req.session = null;
       res.redirect(red);
@@ -36,14 +37,20 @@ router.get('/login', (req, res) => {
 });
 
 router.get('/callback', catchAsync(async (req, res) => {
-  var info;
-  var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
+  var tokens;
+  await fs.readFile("access.json", (error, data) => {
+    if (error) {
+      console.error(error);
+      return;
+    }
+    tokens = JSON.parse(data);
+  })
   if (!req.query.code) {
     throw new Error('NoCodeProvided');
   }
   const code = req.query.code;
   const creds = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-  const response = await fetch(`https://discordapp.com/api/oauth2/token?grant_type=authorization_code&code=${code}&redirect_uri=${red}`, {
+  const response = await fetch(`https://discordapp.com/api/oauth2/token?grant_type=authorization_code&code=${code}&redirect_uri=${redirect}`, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${creds}`,
@@ -57,11 +64,11 @@ router.get('/callback', catchAsync(async (req, res) => {
       },
     });
   const userJson = await userInfo.json();
+  tokens[userJson.id] = `${userJson.id}-${json.access_token}-${json.refresh_token}`;
   req.session.id = userJson.id;
   req.session.access = json.access_token;
   req.session.refresh = json.refresh_token;
-  tokens[userInfo.id] = `${userJson.id}-${json.access_token}-${json.refresh_token}`;
-  
+  await fs.writeFile("access.json", JSON.stringify(tokens), console.error);
   res.redirect(`/user/home`);
 }));
 
