@@ -3,7 +3,9 @@
 $(document).ready(() => {
   $("#signup").click((e) => {
     e.preventDefault();
-    $.post('/user/signup'); 
+    $.post('/user/signup', {
+      "_csrf": $("#csrf").val(),
+    }); 
     location.reload(true);
   });
   $("#respond").click((e) => {
