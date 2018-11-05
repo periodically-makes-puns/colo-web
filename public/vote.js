@@ -13,7 +13,6 @@ $(document).ready(() => {
       let otp = "";
       $("#currscreen").children().each((ind, ele) => {
         otp += $(ele).children().children().first().children().text();
-        console.log($(ele).html());
       });
       $("#votelets").val(otp);
     }
@@ -26,6 +25,7 @@ $(document).ready(() => {
       screenNum: screenNum,
       vote: vote,
       seed: seed,
+      "_csrf": $("#csrf").val(),
     });
     location.reload(true);
   });
