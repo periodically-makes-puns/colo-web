@@ -26,7 +26,7 @@ $(document).ready(function () {
   
   $(".submit").click((event) => {
     event.preventDefault();
-    let body = {};
+    let body = {"_csrf": $("#csrf").val()};
     $(".entry").each((ind, ele) => {
       if (ele.value.trim()) body[ele.name] = ele.value.trim();      
     });
@@ -36,7 +36,9 @@ $(document).ready(function () {
 
   $(".signup").click((event) => {
     event.preventDefault();
-    $.post('/user/signup'); 
+    $.post('/user/signup', {
+      "_csrf": $("#csrf").val(),
+    }); 
     location.reload(true);
   });
 
