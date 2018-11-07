@@ -21,6 +21,7 @@
       <h1>Welcome, <%= user.username %>.</h1>
     </div>
     <div class="responses">
+      <input type="hidden" name="_csrf" id="csrf" value="<%= csrfToken %>">
       <% if(numResps) {
         for(var i = 1; i < numResps+1; i++) { 
           ind = responses.findIndex((ele) => {return ele.respNum == i;}); 

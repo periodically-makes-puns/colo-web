@@ -13,7 +13,6 @@ $(document).ready(() => {
       let otp = "";
       $("#currscreen").children().each((ind, ele) => {
         otp += $(ele).children().children().first().children().text();
-        console.log($(ele).html());
       });
       $("#votelets").val(otp);
     }
