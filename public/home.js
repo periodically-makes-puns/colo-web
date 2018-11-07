@@ -8,7 +8,7 @@ $(document).ready(() => {
     }); 
     location.reload(true);
   });
-  $(document.body).on("click", "#vote", (e) => {
+  $(document.body).on("click", "#respond", (e) => {
     e.preventDefault();
     location.href='/user/respond';
   });

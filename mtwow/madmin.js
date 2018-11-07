@@ -342,10 +342,10 @@ module.exports = async (client, msg) => {
               if (nr <= 0.5) {ll++;}
               if (nr <= 0.2) {ll+=2;}
               if (val[6] <= 0.3) {ll+=3;}
-              editLives.run({userid: val[0], lives: (contestantData.lives - ll - bg * contestantData.spell > 9) ? 9 : contestantData.lives - ll - bg * contestantData.spell});
-              editSpell.run({userid: val[0], spell: 0});
+              //editLives.run({userid: val[0], lives: (contestantData.lives - ll - bg * contestantData.spell > 9) ? 9 : contestantData.lives - ll - bg * contestantData.spell});
+              //editSpell.run({userid: val[0], spell: 0});
               if (contestantData.lives - ll - bg * contestantData.spell < 0) {
-                killContestant.run({userid: val[0]});
+                // killContestant.run({userid: val[0]});
               }
             } catch (e) {
               console.log(val[0]);

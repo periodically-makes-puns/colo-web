@@ -12,7 +12,7 @@ $(document).ready(() => {
     stop: (e) => {
       let otp = "";
       $("#currscreen").children().each((ind, ele) => {
-        otp += $(ele).children().children().first().children().text();
+        otp += $(ele).children().children().children().children().first().children().text();
       });
       $("#votelets").val(otp);
     }
@@ -27,15 +27,18 @@ $(document).ready(() => {
       seed: seed,
       "_csrf": $("#csrf").val(),
     });
-    location.reload(true);
+    window.location.reload(true);
   });
   $(document.body).on("click", ".curr", (e) => {
     location.href = "/user/vote";
   })
   $(".prev").each(function (ind, ele) {
-    $(document.body).on("click", this, (e) => {
-      location.href = `/user/vote?screenNum=${encodeURIComponent(ns - ind)}`;
-    });
+    $(this).data("href", `/user/vote?screenNum=${encodeURIComponent(ns - ind)}`);
+  });
+  $(document.body).on("click", ".prev", (e) => {
+    e.preventDefault();
+    location.href = $(e.target).data("href");
+    console.log(`Going to ${$(e.target).data("href")}`)
   });
   $(document.body).on("click", "#logout", (e) => {
     e.preventDefault();
