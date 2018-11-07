@@ -19,25 +19,26 @@ $(document).ready(() => {
     }
   });
 
-  $("#trigger").click((e) => {
+  $(document.body).on("click", "#trigger", (e) => {
     e.preventDefault();
     let vote = $("#votelets").val();
     $.post(`/user/vote`, {
       screenNum: screenNum,
       vote: vote,
       seed: seed,
+      "_csrf": $("#csrf").val(),
     });
     location.reload(true);
   });
-  $(".curr").click((e) => {
+  $(document.body).on("click", ".curr", (e) => {
     location.href = "/user/vote";
   })
   $(".prev").each(function (ind, ele) {
-    $(this).click((e) => {
+    $(document.body).on("click", this, (e) => {
       location.href = `/user/vote?screenNum=${encodeURIComponent(ns - ind)}`;
     });
   });
-  $("#logout").click((e) => {
+  $(document.body).on("click", "#logout", (e) => {
     e.preventDefault();
     location.href = "/user/logout";
   })

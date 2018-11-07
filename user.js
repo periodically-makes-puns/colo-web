@@ -293,19 +293,13 @@ router.post("/vote", asTransaction((req, res, next) => {
   res.status(200).send("OK");
 }));
 
-router.get('/logout', asTransaction((req, res, next) => {
+router.post('/logout', asTransaction((req, res, next) => {
   fs.readFile("./access.json", "utf-8", (err, data) => {
     tokens = JSON.parse(data);
     delete tokens[req.id];
     fs.writeFile("./access.json", JSON.stringify(tokens), console.error);
   });
-  fs.readFile("./api/config.json", "utf-8", (err, data) => {
-    a = JSON.parse(data);
-    delete a[req.id];
-    fs.writeFile("./api/config.json", JSON.stringify(a), console.error);
-  });
-  res.clearCookie("login", {signed: true});
-  res.clearCookie("s", {signed: true});
+  req.session = null;
   res.redirect("https://www.pmpuns.com");
 }));
 

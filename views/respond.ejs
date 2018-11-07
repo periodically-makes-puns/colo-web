@@ -16,6 +16,7 @@
       <li class="navlink right"><a id="logout" href="/">Logout</a></li>
       <li class="navlink right"><p><%= user.username %></p></li>
     </ul>
+    <input type="hidden" name="_csrf" id="csrf" value="<%= csrfToken %>">
     <div class="content">
       <h1>Welcome, <%= user.username %>.</h1>
     </div>
@@ -47,7 +48,7 @@
       } else {%>
           <div class="infobox">
             <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
-            <button class="signup" type="button" class="button">Sign up!</button>
+            <button id="signup" type="button" class="button">Sign up!</button>
           </div>  
         <% } %>
     </div>

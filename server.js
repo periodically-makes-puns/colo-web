@@ -136,6 +136,15 @@ const tcreds = JSON.parse(fs.readFileSync("./token.json"));
 
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
 // middleware
+const Sentry = require('@sentry/node');
+
+Sentry.init({ dsn: 'https://a03fc329129b4603b9fdb248fad160fe@sentry.io/1316881' });
+
+// The request handler must be the first middleware on the app
+app.use(Sentry.Handlers.requestHandler());
+
+// The error handler must be before any other error middleware
+app.use(Sentry.Handlers.errorHandler());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser("secret"));
 app.use(cookieParser());
@@ -184,11 +193,15 @@ app.use('/user', require("./user.js"));
 app.use((err, req, res, next) => {
   if (err.code == "EBADCSRFTOKEN") {
     res.status(403);
-    console.log("CSRF Attack Detected!");
+    console.warn(`CSRF Attack Detected! ${(req.session.isPopulated) ? req.session.id : "Nobody"} may have been targeted...`);
     return res.send({
       status: 'ERROR',
     });
+  } else {
+    next(err);
   }
+});
+app.use((err, req, res, next) => {
   console.error(err);
   switch (err.message) {
     case 'NoCodeProvided':

@@ -2,13 +2,13 @@
 var id;
 $(document).ready(function () {
   id = $("title").html();
-  $(".entry").keypress(function (event) { 
+  $(document.body).on("keypress", ".entry", function (event) { 
     if (event.which == 13) {
       event.preventDefault();
    }
   });
 
-  $(".entry").on("input", function (event) { 
+  $(document.body).on("input", ".entry", function (event) { 
     event.preventDefault();
     let numWords = $(this).val().trim().split(/\s+/g).length;
     if ($(this).val().trim() == "") numWords = 0;
@@ -20,13 +20,13 @@ $(document).ready(function () {
     }
   });
 
-  $("form.response").submit((event) => {
+  $(document.body).on("submit", "form.response", (event) => {
     event.preventDefault();
   });
   
-  $(".submit").click((event) => {
+  $(document.body).on("click", ".submit", (event) => {
     event.preventDefault();
-    let body = {};
+    let body = {"_csrf": $("#csrf").val()};
     $(".entry").each((ind, ele) => {
       if (ele.value.trim()) body[ele.name] = ele.value.trim();      
     });
@@ -34,13 +34,13 @@ $(document).ready(function () {
     location.reload(true);
   });
 
-  $(".signup").click((event) => {
+  $(document.body).on("click", "#signup", (event) => {
     event.preventDefault();
-    $.post('/user/signup'); 
+    $.post('/user/signup', {"_csrf": $("#csrf").val()}); 
     location.reload(true);
   });
 
-  $("#logout").click((event) => {
+  $(document.body).on("click", "#logout", (event) => {
     e.preventDefault();
     location.href = "/user/logout";
   })

@@ -1,20 +1,20 @@
 /* jshint esversion: 6 */
 
 $(document).ready(() => {
-  $("#signup").click((e) => {
+  $(document.body).on("click", "#signup", (e) => {
     e.preventDefault();
-    $.post('/user/signup'); 
+    $.post('/user/signup', {"_csrf": $("#csrf").val()}); 
     location.reload(true);
   });
-  $("#respond").click((e) => {
+  $(document.body).on("click", "#vote", (e) => {
     e.preventDefault();
     location.href='/user/respond';
   });
-  $("#vote").click((e) => {
+  $(document.body).on("click", "#vote", (e) => {
     e.preventDefault();
     location.href='/user/vote';
   });
-  $("#logout").click((e) => {
+  $(document.body).on("click", "#logout", (e) => {
     e.preventDefault();
     location.href = "/user/logout";
   })
