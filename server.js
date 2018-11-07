@@ -41,9 +41,9 @@ var proxyServer = proxy.createProxyServer({
 
 const cred = JSON.parse(fs.readFileSync("./token.json", "utf-8"));
 const admins = ["262173579876106240", "248953835899322370"];
-var privateKey  = fs.readFileSync('./protecc/server.key', 'utf8');
-var certificate = fs.readFileSync('./protecc/server.crt', 'utf8');
-var credentials = {key: privateKey, cert: certificate, requestCert: false, rejectUnauthorized: false};
+var privateKey  = fs.readFileSync('./protecc/privkey.pem', 'utf8');
+var certificate = fs.readFileSync('./protecc/fullchain.pem', 'utf8');
+var credentials = {key: privateKey, cert: certificate};
 const mtwow = require("./mtwow/mtwow.js");
 const madmin = require("./mtwow/madmin.js");
 const restart = require('proc-restart');
@@ -51,7 +51,7 @@ const cookieSession = require("cookie-session");
 const Ping = require('ping-lite');
 const csrf = require("csurf"); 
 var ping = new Ping('www.pmpuns.com');
-var csrfProtection = csrf({cookie: true});
+
 
 setInterval(() => {
   ping.send(function(err, ms) {
@@ -152,11 +152,12 @@ app.use(morgan('common', {stream: accessLogStream}));
 app.use(helmet());
 app.use(helmet.contentSecurityPolicy({
   directives: {
-    defaultSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "https://localhost:10683", "'unsafe-eval'"],
-    connectSrc: ["'self'", "https://pmpuns.com"],
+    defaultSrc: ["'none'"],
+    styleSrc: ["'self'"],
+    imgSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    connectSrc: ["'self'"],
+    formAction: ["'self'"],
   },
 }));
 app.set("trust proxy", 1);
@@ -165,7 +166,13 @@ app.use(cookieSession({
   secret: tcreds.csec,
   secure: true,
   httpOnly: true,
+  sameSite: true,
 }));
+var csrfProtection = csrf({cookie: {
+  httpOnly: true,
+  secure: true,
+  sameSite: true,
+}});
 app.use(csrfProtection);
 app.engine('html', ejs.renderFile);
 app.set('view engine', 'html');
@@ -183,7 +190,7 @@ app.all('/' + SECRET_URL + "/*", (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.redirect("/api/discord/login?cookie=1");
+  res.redirect("/api/discord/login");
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

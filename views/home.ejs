@@ -2,70 +2,88 @@
 <html>
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Welcome <%= user.username %></title>
+    <title>Firecracker Website</title>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="/home.css">
+    <script src="/jquery-3.3.1.js" type="text/javascript"></script>
+    <script src="/js/bootstrap.js" type="text/javascript"></script>
+    <script src="/home.js" type="text/javascript"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
-    <ul class="navbar">
-      <li class="navlink active"><a id="home" href="/user/home">Home</a></li>
-      <li class="navlink"><a id="respond" href="/user/respond">Respond</a></li>
-      <li class="navlink"><a id="vote" href="/user/vote">Vote</a></li>
-      <li class="navlink right"><a id="logout" href="/">Logout</a></li>
-      <li class="navlink right"><p><%= user.username %></p></li>
-    </ul>
     <input type="hidden" name="_csrf" id="csrf" value="<%= csrfToken %>">
-    <div class="content">
-      <h1>Welcome, <%= user.username %>.</h1>
-    </div>
-    <div class="info">
-      <h2>The current status is </h2>
-      <h1 id="status"><%= status %></h1>
-      <h2>.</h2>
-    </div>
-    <div class="infobox">
-    <% switch (status) { 
-      case "signups": 
-        if (signed_up) { %>
-          <h2 style="color: #4CAF50;">You've signed up already!</h2>
-        <%} else {%> 
-          <h2 style="color: red;">You haven't signed up yet!</h2>
-          <button id="signup" type="button" class="button">Sign up!</button>
-        <%} 
-        break; 
-      case "responding":
-        if (!numResps) {%>
-          <h2 style="color: red;">You haven't signed up yet!</h2>
-          <button id="signup" type="button" class="button">Sign up!</button>
-        <%} else if (subResps < numResps) {%>
-          <h2 style="color: red;">You've submitted <%= subResps %> of your <%= numResps %> responses!</h2>
-          <button id="respond" type="button" class="button">Submit!</button>
-        <%} else if (over) {%>
-          <h2 style="color: red;">You have responses over the word count!</h2>
-          <button id="respond" type="button" class="button">Edit!</button>
-        <%} else {%>
-          <h2 style="color: #4CAF50;">You've submitted everything already!</h2>
-          <button id="respond" type="button" class="button">Edit!</button>
-        <%}
-        break;
-      case "voting":
-        if (numVotes === null) {%>
-          <h2 style="color: red;">You haven't requested a voting screen yet!</h2>
-          <button id="vote" type="button" class="button">Vote!</button>
-        <%} else if (numVotes == 0) {%>
-          <h2 style="color: red;">You've requested a voting screen, but you haven't voted yet!</h2>
-          <button id="vote" type="button" class="button">Vote!</button>
-        <%} else if (subResps && (numVotes < subResps)) {%>
-          <h2 style="color: red;">You haven't voted on all your responses yet!</h2>
-          <button id="vote" type="button" class="button">Vote!</button>
-        <%} else {%>
-          <h2 style="color: #4CAF50;">You've voted enough times, but you should keep voting!</h2>
-          <button id="vote" type="button" class="button">Vote!</button>
-        <%}
-    }%>
-    </div>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+      <span class="navbar-brand text-danger lead">Firecracker TWOW</span>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbar">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link lead" href="/user/home">Home <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link lead" href="/user/respond">Respond</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link lead" href="/user/vote">Vote</a>
+          </li>
+        </ul>
+        <div class="justify-content-end">
+          <ul class="navbar-nav navbar-right mr-auto">
+            <span class="navbar-text text-primary lead username"><%= user.username %></span>
+            <li class="nav-item">
+              <a class="nav-link lead" href="#">Logout</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="jumbotron">
+      <h1 class="display-4 text-center">Welcome, <%= user.username %>!</h1>
+      <h3 class="text-center">The current status is <code><%= status %></code>.</h3>
+      <div class="text-center">
+        <% switch (status) { 
+          case "signups": 
+            if (signed_up) { %>
+              <h3 class="text-success">You've signed up already!</h3>
+            <%} else {%> 
+              <h3 class="text-warning">You haven't signed up yet!</h3>
+              <button id="signup" type="button" class="btn btn-warning btn-lg">Sign up!</button>
+            <%} 
+            break; 
+          case "responding":
+            if (!numResps) {%>
+              <h3 class="text-info">You're not signed up. Oh well.</h3>
+            <%} else if (subResps < numResps) {%>
+              <h3 class="text-warning">You've submitted <code><%= subResps %></code> of your <code><%= numResps %></code> responses!</h3>
+              <button id="respond" type="button" class="btn btn-warning btn-lg">Submit!</button>
+            <%} else if (over) {%>
+              <h3 class="text-danger">You have responses over the word count!</h3>
+              <button id="respond" type="button" class="btn btn-warning btn-lg">Edit!</button>
+            <%} else {%>
+              <h3 class="text-success">You've submitted everything already!</h3>
+              <button id="respond" type="button" class="btn btn-success btn-lg">Edit!</button>
+            <%}
+            break;
+          case "voting":
+            if (numVotes === null) {%>
+              <h3 class="text-warning">You haven't requested a voting screen yet!</h3>
+              <button id="vote" type="button" class="btn btn-warning btn-lg">Vote!</button>
+            <%} else if (numVotes == 0) {%>
+              <h3 class="text-warning">You've requested a voting screen, but you haven't voted yet!</h3>
+              <button id="vote" type="button" class="btn btn-lg btn-warning">Vote!</button>
+            <%} else if (subResps && (numVotes < subResps)) {%>
+              <h3 class="text-warning">You haven't voted on all your responses yet!</h3>
+              <button id="vote" type="button" class="btn btn-warning btn-lg">Vote!</button>
+            <%} else {%>
+              <h3 class="text-success">You've voted enough times, but you should keep voting!</h3>
+              <button id="vote" type="button" class="btn btn-success btn-lg">Vote!</button>
+            <%}
+        }%>
+      </div>
+    </div> <!-- .jumbotron -->
   </body>
-  <script src="/jquery-3.3.1.js" type="text/javascript"></script>
-  <script src="/home.js" type="text/javascript"></script>
+  
 </html>

@@ -1,59 +1,86 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title><%= user.id %></title>
-    <link rel="stylesheet" type="text/css" href="/respond.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Firecracker Website</title>
+  <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="/respond.css">
+  <script src="/jquery-3.3.1.js" type="text/javascript"></script>
+  <script src="/js/bootstrap.js" type="text/javascript"></script>
+  <script src="/respond.js" type="text/javascript"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
-    
-    <ul class="navbar">
-      <li class="navlink"><a id="home" href="/user/home">Home</a></li>
-      <li class="navlink active"><a id="respond" href="/user/respond">Respond</a></li>
-      <li class="navlink"><a id="vote" href="/user/vote">Vote</a></li>
-      <li class="navlink right"><a id="logout" href="/">Logout</a></li>
-      <li class="navlink right"><p><%= user.username %></p></li>
-    </ul>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+      <span class="navbar-brand text-danger lead">Firecracker TWOW</span>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbar">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link lead" href="/user/home">Home <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link lead" href="/user/respond">Respond</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link lead" href="/user/vote">Vote</a>
+          </li>
+        </ul>
+        <div class="justify-content-end">
+          <ul class="navbar-nav navbar-right mr-auto">
+            <span class="navbar-text text-primary lead username"><%= user.username %></span>
+            <li class="nav-item">
+              <a class="nav-link lead" href="#">Logout</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
     <input type="hidden" name="_csrf" id="csrf" value="<%= csrfToken %>">
-    <div class="content">
-      <h1>Welcome, <%= user.username %>.</h1>
-    </div>
-    <div class="responses">
-      <input type="hidden" name="_csrf" id="csrf" value="<%= csrfToken %>">
-      <% if(numResps) {
-        for(var i = 1; i < numResps+1; i++) { 
-          ind = responses.findIndex((ele) => {return ele.respNum == i;}); 
-          if (ind != -1) {
-            resp = responses[ind];%>
-            <div class="respcont" style="background-color: <%=(resp.wc > 10) ? '#cc0000' : 'green'%>;">
-              <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
-              <form class="response" style="padding-bottom: 4px">
-                <input class="response entry" type="text" name="response<%= i %>" value="<%= resp.response %>" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> maxlength="2000" <%= (!isRes) ? "readonly" : ""%>>
-                <div class="response wc"><h3 class="response wc"><%= resp.words %> word<%= (resp.words != 1) ? "s" : "" %></h3></div>
-                <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>" >Submit!</button>
-              </form>
-            </div>
-          <%} else {%>
-            <div class="respcont">
-            <div style="display: inline-block; text-align: center; width: 21px; margin: 0px 10px;"><h3 class="response" style="text-align: center;"><%= i %></h3></div>
-              <form class="response" style="padding-bottom: 4px">
-                <input class="response entry" type="text" <%= (!isRes) ? "style='opacity: 0.6; cursor: not-allowed;'" : ""%> name="response<%= i %>" <%= (!isRes) ? "readonly" : ""%> maxlength="2000">
-                <div class="response wc"><h3 class="response wc">0 words</h3></div>
-                <button class="response submit" type="button" <%= (!isRes) ? "disabled" : ""%> style="padding: 15px 0px; color: black;<%= (!isRes) ? " opacity: 0.6; cursor: not-allowed" : ""%>">Submit!</button>
-              </form>
-            </div>
-          <% }
-        }
-      } else {%>
-          <div class="infobox">
-            <h2 style="color: red;"><strong>You haven't signed up yet!</strong></h2>
-            <button id="signup" type="button" class="button">Sign up!</button>
-          </div>  
-        <% } %>
+    <div class="jumbotron justify-content-center text-center">
+      <h1 class="display-4">Welcome, <%= user.username %>!</h1>
+      <div class="container">
+        <% if(numResps) {
+          for(var i = 1; i < numResps+1; i++) { 
+            ind = responses.findIndex((ele) => {return ele.respNum == i;}); 
+            if (ind != -1) {
+              resp = responses[ind];%>
+              <div class="row">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <h3 class="response input-group-text bg-dark text-light"><%= i %></h3>
+                  </div>
+                  <input class="response entry form-control" type="text" name="response<%= i %>" value="<%= resp.response %>" maxlength="2000" <%= (!isRes) ? "readonly" : ""%>>
+                  <div class="response wc input-group-append">
+                    <h3 class="response wc input-group-text <%= (resp.words <= 10) ? 'bg-success text-light' : 'bg-danger text-warning' %>"><%= resp.words %> word<%= (resp.words != 1) ? "s" : "" %></h3>
+                  </div>
+                  <button class="response submit btn <%= (resp.words <= 10) ? 'btn-success text-light' : 'btn-danger text-warning' %>" type="button" <%= (!isRes) ? "disabled" : "" %> >Submit!</button>
+                </div>
+              </div>
+            <%} else {%>
+              <div class="row">
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <h3 class="response input-group-text bg-dark text-light"><%= i %></h3>
+                  </div>
+                  <input class="response entry form-control" type="text" name="response<%= i %>" maxlength="2000" <%= (!isRes) ? "readonly" : ""%>>
+                  <div class="response wc input-group-append">
+                    <h3 class="response wc input-group-text bg-dark text-light"><%= resp.words %> word<%= (resp.words != 1) ? "s" : "" %></h3>
+                  </div>
+                  <button class="response submit btn btn-dark text-light" type="button" <%= (!isRes) ? "disabled" : "" %> >Submit!</button>
+                </div>
+              </div>
+            <%}
+          }
+        } else {%>
+            <div class="infobox">
+              <h2 class="text-warning">You didn't sign up.</h2>
+            </div>  
+          <% } %>
+      </div>
     </div>
   </body>
-  <script src="/jquery-3.3.1.js" type="text/javascript"></script>
-  <script src="/respond.js" type="text/javascript"></script>
 </html>

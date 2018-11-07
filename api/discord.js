@@ -20,11 +20,8 @@ router.get('/login', (req, res) => {
   if (!req.session.isPopulated) res.redirect(red);  
   else {
     var tokens = JSON.parse(fs.readFileSync("./access.json",'utf8'));
-    console.log(tokens[req.session.id]);
-    console.log(req.session.id);
     if (!tokens.hasOwnProperty(req.session.id)) res.redirect(red);
     else if (tokens[req.session.id]) {
-      console.log("huh");
       args = tokens[req.session.id].split("-");
       req.session.access = tokens[1];
       req.session.refresh = tokens[2];

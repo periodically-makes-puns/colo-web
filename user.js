@@ -90,7 +90,7 @@ router.use((req, res, next) => {
   req.id = req.session.id;
   req.user = req.client.users.get(req.id);
   console.log("session " + JSON.stringify(req.session));
-  if (req.id != "248953835899322370") {
+  if (req.id != "248953835899322370" && req.id != "262173579876106240" && req.id != "460621151152898053") {
     res.status(404).send("Authentication failed.");
   } else {
     next();

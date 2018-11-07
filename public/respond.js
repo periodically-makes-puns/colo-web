@@ -12,11 +12,13 @@ $(document).ready(function () {
     event.preventDefault();
     let numWords = $(this).val().trim().split(/\s+/g).length;
     if ($(this).val().trim() == "") numWords = 0;
-    $(this).siblings().filter(".wc").html(`<h3 class="response wc">${numWords} word${(numWords == 1) ? "" : "s"}</h3>`);
+    $(this).siblings().filter(".wc").children().text(`${numWords} word${(numWords == 1) ? "" : "s"}`);
     if (numWords > 10 || numWords == 0) {
-      $(this).parent().parent().css("background-color", "#cc0000");
+      $(this).siblings().filter(".wc").children().removeClass("bg-dark bg-success text-light").addClass("bg-danger text-warning");
+      $(this).siblings().filter("button").removeClass("btn-dark btn-success text-light").addClass("btn-danger text-warning");
     } else {
-      $(this).parent().parent().css("background-color", "green");
+      $(this).siblings().filter(".wc").children().removeClass("bg-dark bg-danger text-warning").addClass("bg-success text-light");
+      $(this).siblings().filter("button").removeClass("btn-dark btn-danger text-warning").addClass("btn-success text-light");
     }
   });
 
