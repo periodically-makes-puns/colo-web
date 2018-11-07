@@ -49,9 +49,10 @@ const madmin = require("./mtwow/madmin.js");
 const restart = require('proc-restart');
 const cookieSession = require("cookie-session");
 const Ping = require('ping-lite');
- 
+const csrf = require("csurf"); 
 var ping = new Ping('www.pmpuns.com');
- 
+var csrfProtection = csrf({cookie: true});
+
 setInterval(() => {
   ping.send(function(err, ms) {
     if (err) {
@@ -66,11 +67,6 @@ setInterval(() => {
     client.channels.get("475115017876930560").send('www.pmpuns.com responded in '+ms+'ms.')
   });
 }, 900000);
-
-
-
-// discord requires
-
 
 client.on("message", (msg) => { // on every message that gets sent
   // run this stuff
@@ -161,7 +157,7 @@ app.use(cookieSession({
   secure: true,
   httpOnly: true,
 }));
-
+app.use(csrfProtection);
 app.engine('html', ejs.renderFile);
 app.set('view engine', 'html');
 
@@ -186,17 +182,22 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/discord', require('./api/discord.js'));
 app.use('/user', require("./user.js"));
 app.use((err, req, res, next) => {
+  if (err.code == "EBADCSRFTOKEN") {
+    res.status(403);
+    console.log("CSRF Attack Detected!");
+    return res.send({
+      status: 'ERROR',
+    });
+  }
   console.error(err);
   switch (err.message) {
     case 'NoCodeProvided':
       return res.status(400).send({
         status: 'ERROR',
-        error: err.message,
       });
     default:
       return res.status(500).send({
         status: 'ERROR',
-        error: err.message,
       });
   }
 });

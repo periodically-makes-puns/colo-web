@@ -11,7 +11,6 @@ const sgen = require("./mtwow/screengen.js");
 const Random = require("random-js");
 const SQLite = require("better-sqlite3");
 var data = new SQLite("./mtwow/mtwow.sqlite");
-var csrf = new SQLite("./csrf.sqlite");
 var cookieSession = require('cookie-session')
 
 var getStatus = data.prepare("SELECT current FROM Status;");
@@ -110,6 +109,7 @@ router.get("/home", asTransaction((req, res, next) => {
     'over': (overWC.length || 0) > 0,
     'numVotes': voterData.voteCount,
     "signed_up": contestantData.numResps,
+    'csrfToken': req.csrfToken(),
   });
 }));
 
@@ -123,6 +123,7 @@ router.get("/respond", asTransaction((req, res, next) => {
     'numResps': contestantData.numResps,
     'responses': responses,
     'isRes': status == "responding",
+    'csrfToken': req.csrfToken(),
   });
 }));
 
@@ -190,6 +191,7 @@ router.get("/vote", asTransaction((req, res, next) => {
     "screenNum": screenNum,
     'priorScreens': getVoteSeeds.all({userid: req.id}),
     'isVot': getStatus.get().current == "voting",
+    'csrfToken': req.csrfToken(),
   });
 }));
 
